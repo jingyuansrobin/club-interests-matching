@@ -14,15 +14,13 @@ create table if not exists public.member_profiles (
   roles text[],
   communication text,
   research text,
-  discoverable boolean not null default true,
+  discoverable boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
 alter table public.member_profiles enable row level security;
 
--- Every signed-in club visitor can read discoverable pseudonymous player profiles.
--- Do not store private contact details in this table.
 drop policy if exists "Authenticated users can read discoverable profiles" on public.member_profiles;
 create policy "Authenticated users can read discoverable profiles"
 on public.member_profiles
@@ -30,7 +28,6 @@ for select
 to authenticated
 using (discoverable = true or (select auth.uid()) = user_id);
 
--- A member can only create their own row.
 drop policy if exists "Users can create their own profile" on public.member_profiles;
 create policy "Users can create their own profile"
 on public.member_profiles
@@ -38,7 +35,6 @@ for insert
 to authenticated
 with check ((select auth.uid()) = user_id);
 
--- A member can only modify their own row.
 drop policy if exists "Users can update their own profile" on public.member_profiles;
 create policy "Users can update their own profile"
 on public.member_profiles
@@ -47,7 +43,6 @@ to authenticated
 using ((select auth.uid()) = user_id)
 with check ((select auth.uid()) = user_id);
 
--- Optional: allow users to remove their own profile later.
 drop policy if exists "Users can delete their own profile" on public.member_profiles;
 create policy "Users can delete their own profile"
 on public.member_profiles
@@ -55,5 +50,46 @@ for delete
 to authenticated
 using ((select auth.uid()) = user_id);
 
--- Explicit grants keep RLS in control of data access.
 grant select, insert, update, delete on public.member_profiles to authenticated;
+
+-- Contact data is kept separately so a hidden QQ is protected by RLS,
+-- not merely hidden by frontend code.
+create table if not exists public.member_contacts (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  qq text not null check (qq ~ '^[0-9]{5,12}$'),
+  show_qq boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+
+alter table public.member_contacts enable row level security;
+
+drop policy if exists "Users can read public or own QQ" on public.member_contacts;
+create policy "Users can read public or own QQ"
+on public.member_contacts
+for select
+to authenticated
+using (show_qq = true or (select auth.uid()) = user_id);
+
+drop policy if exists "Users can create their own contact" on public.member_contacts;
+create policy "Users can create their own contact"
+on public.member_contacts
+for insert
+to authenticated
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can update their own contact" on public.member_contacts;
+create policy "Users can update their own contact"
+on public.member_contacts
+for update
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can delete their own contact" on public.member_contacts;
+create policy "Users can delete their own contact"
+on public.member_contacts
+for delete
+to authenticated
+using ((select auth.uid()) = user_id);
+
+grant select, insert, update, delete on public.member_contacts to authenticated;
