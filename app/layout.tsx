@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./connections.css";
 
 export const metadata: Metadata = {
   title: "方块搭子 · 社团兴趣匹配",
