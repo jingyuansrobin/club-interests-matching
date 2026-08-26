@@ -13,25 +13,27 @@ export default function AccountControl() {
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) return;
-    const supabase = getSupabaseClient();
-    if (!supabase) return;
+    if (window.location.pathname.startsWith("/admin")) return;
+    const maybeClient = getSupabaseClient();
+    if (!maybeClient) return;
+    const client = maybeClient;
 
-    async function refresh() {
-      const { data } = await supabase.auth.getUser();
+    const refresh = async () => {
+      const { data } = await client.auth.getUser();
       const user = data.user;
       setIsAnonymous(user?.is_anonymous ?? true);
       setBoundEmail(user?.email ?? "");
-    }
+    };
 
     refresh().catch(console.error);
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+    const { data: listener } = client.auth.onAuthStateChange(() => {
       refresh().catch(console.error);
     });
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  if (typeof window !== "undefined" && window.location.pathname.startsWith("/admin")) return null;
+  const onAdminPage = typeof window !== "undefined" && window.location.pathname.startsWith("/admin");
+  if (onAdminPage) return null;
 
   async function protectCurrentProfile() {
     const cleanEmail = email.trim().toLowerCase();
@@ -40,8 +42,8 @@ export default function AccountControl() {
       return;
     }
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
+    const client = getSupabaseClient();
+    if (!client) {
       setMessage("当前未连接成员数据库。");
       return;
     }
@@ -55,7 +57,7 @@ export default function AccountControl() {
         return;
       }
 
-      const { data: userData, error: userError } = await supabase.auth.getUser();
+      const { data: userData, error: userError } = await client.auth.getUser();
       if (userError) throw userError;
       if (!userData.user?.is_anonymous) {
         setBoundEmail(userData.user?.email ?? "");
@@ -64,7 +66,7 @@ export default function AccountControl() {
         return;
       }
 
-      const { error } = await supabase.auth.updateUser(
+      const { error } = await client.auth.updateUser(
         { email: cleanEmail },
         { emailRedirectTo: `${window.location.origin}/` }
       );
@@ -85,8 +87,8 @@ export default function AccountControl() {
       return;
     }
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
+    const client = getSupabaseClient();
+    if (!client) {
       setMessage("当前未连接成员数据库。");
       return;
     }
@@ -94,7 +96,7 @@ export default function AccountControl() {
     try {
       setBusy(true);
       setMessage("");
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await client.auth.signInWithOtp({
         email: cleanEmail,
         options: {
           shouldCreateUser: false,
