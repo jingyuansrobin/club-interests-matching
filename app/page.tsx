@@ -35,7 +35,7 @@ export default function Home() {
         if (cancelled) return;
         if (!data.enabled) {
           setDataMode("mock");
-          setDataMessage("未配置 Supabase，当前使用演示成员数据");
+          setDataMessage("当前使用演示成员数据");
           return;
         }
 
@@ -66,7 +66,7 @@ export default function Home() {
         console.error(error);
         setMembers(mockMembers);
         setDataMode("mock");
-        setDataMessage("真实成员池暂不可用，已自动切换演示数据");
+        setDataMessage("真实成员池暂不可用，已切换演示数据");
       });
 
     return () => {
@@ -137,7 +137,7 @@ export default function Home() {
       setSavedQq(cleanQq);
       setSavedShowQq(showQq);
       setIdentityDone(true);
-      setSaveMessage(showQq ? "资料已保存，匹配到你的成员可以看到 QQ" : "资料已保存，QQ 仅你自己可见");
+      setSaveMessage(showQq ? "资料已保存，匹配成员可以看到你的 QQ" : "资料已保存，QQ 仅你自己可见");
     } catch (error) {
       console.error(error);
       setSaveMessage(error instanceof Error ? error.message : "保存失败，请稍后重试");
@@ -164,128 +164,242 @@ export default function Home() {
     : 0;
 
   return (
-    <main className="shell">
-      <header className="nav">
-        <div className="brand"><span className="cube">◆</span> 方块搭子</div>
-        <div className="navStatus">
-          <span className={`sourceBadge ${dataMode}`}>
-            {dataMode === "loading" ? "连接成员池…" : dataMode === "remote" ? "● 真实成员池" : "演示数据"}
+    <main className={`appRoot ${started ? "isStarted" : ""}`}>
+      <div className="sceneBackdrop" aria-hidden="true" />
+      <div className="sceneShade" aria-hidden="true" />
+
+      <header className="siteNav">
+        <button className="wordmark" onClick={() => setStarted(false)} aria-label="返回方块搭子首页">
+          <span className="pixelMark">◆</span>
+          <span>ECNUMC Match</span>
+        </button>
+        <div className="navRight">
+          <span className={`poolStatus ${dataMode}`}>
+            <i />
+            {dataMode === "loading" ? "连接成员池" : dataMode === "remote" ? "真实成员池" : "演示模式"}
           </span>
-          <div className="badge">水杉方块社 · MVP</div>
+          <span className="clubName">水杉方块社</span>
         </div>
       </header>
 
       {!started ? (
-        <section className="hero">
-          <div className="eyebrow">不是问卷，是一次逐渐变准的同好发现</div>
-          <h1>社团里可能已经有一个<br /><span>很适合和你一起玩的人。</span></h1>
-          <p>先留下社团昵称和联系方式，再回答一个游戏偏好问题。每一次回答都会重新计算候选人。</p>
-          <button className="primary heroButton" onClick={() => setStarted(true)}>开始找搭子 →</button>
-          <div className="heroMeta"><span>无需注册账号</span><span>QQ 是否展示由你决定</span><span>答完立即反馈</span></div>
-          {dataMessage && <p className="dataMessage">{dataMessage}</p>}
+        <section className="landing">
+          <div className="landingContent">
+            <div className="landingKicker">ECNUMC · PLAYER MATCHING</div>
+            <h1>方块搭子</h1>
+            <p className="landingLead">找到社团里最适合和你一起玩 Minecraft 的人。</p>
+            <p className="landingSub">回答几个轻松的问题，匹配会逐渐变准。愿意公开 QQ 的成员，可以直接被联系。</p>
+            <button className="heroCta" onClick={() => setStarted(true)}>
+              开始匹配
+              <span>→</span>
+            </button>
+            <div className="landingMeta">
+              <span>无需注册</span>
+              <b>·</b>
+              <span>渐进式匹配</span>
+              <b>·</b>
+              <span>QQ 展示由你决定</span>
+            </div>
+            {dataMessage && <div className="landingStatus">{dataMessage}</div>}
+          </div>
+          <div className="landingFooter">
+            <span>水杉方块社 · 方块搭子</span>
+            <span>Built for ECNUMC members</span>
+          </div>
+        </section>
+      ) : !identityDone ? (
+        <section className="identityStage">
+          <div className="glassCard identityPanel">
+            <div className="stepTag">STEP 01 · PLAYER ID</div>
+            <h2>先认识一下你</h2>
+            <p className="panelLead">留下社团昵称和 QQ。你可以决定是否让匹配到你的成员看到联系方式。</p>
+
+            <div className="identityGrid">
+              <label className="fieldGroup">
+                <span>社团昵称 / MC ID</span>
+                <input
+                  value={nickname}
+                  maxLength={32}
+                  onChange={(event) => setNickname(event.target.value)}
+                  placeholder="例如 Jingyuans_robin"
+                />
+              </label>
+              <label className="fieldGroup">
+                <span>QQ</span>
+                <input
+                  value={qq}
+                  inputMode="numeric"
+                  maxLength={12}
+                  onChange={(event) => setQq(event.target.value.replace(/\D/g, ""))}
+                  placeholder="输入你的 QQ 号"
+                />
+              </label>
+            </div>
+
+            <label className={`privacyChoice ${showQq ? "checked" : ""}`}>
+              <input type="checkbox" checked={showQq} onChange={(event) => setShowQq(event.target.checked)} />
+              <span className="privacyIcon">{showQq ? "✓" : "○"}</span>
+              <span>
+                <b>愿意在匹配结果中展示我的 QQ</b>
+                <small>开启后，其他成员只有在匹配结果中发现你时，才能看到并复制你的 QQ。</small>
+              </span>
+            </label>
+
+            <button className="mainButton" disabled={saving || !nickname.trim() || !qq.trim()} onClick={saveIdentity}>
+              {saving ? "正在保存…" : "保存并开始匹配"}
+              {!saving && <span>→</span>}
+            </button>
+            {saveMessage && <div className="formMessage">{saveMessage}</div>}
+          </div>
+
+          <div className="identityAside glassCard subtleCard">
+            <div className="asideNumber">01</div>
+            <h3>身份只填一次</h3>
+            <p>之后每回答一个问题，系统都会立即更新候选人和匹配度。</p>
+            <div className="asideRule" />
+            <div className="privacyNote">
+              <strong>隐私说明</strong>
+              <span>关闭 QQ 展示时，数据库也不会把你的 QQ 返回给其他成员。</span>
+            </div>
+          </div>
         </section>
       ) : (
-        <div className="workspace">
-          <section className="left">
-            {!identityDone ? (
-              <div className="questionCard identityCard">
-                <div className="questionLabel">第一步 · 先认识一下你</div>
-                <h2>在社团里，大家怎么称呼你？</h2>
-                <p className="questionContext">昵称会显示在匹配结果里；QQ 是否展示完全由你决定。</p>
-                <div className="identityFields">
-                  <label>
-                    <span>社团昵称 / MC ID</span>
-                    <input value={nickname} maxLength={32} onChange={(event) => setNickname(event.target.value)} placeholder="例如 Jingyuans_robin" />
-                  </label>
-                  <label>
-                    <span>QQ</span>
-                    <input value={qq} inputMode="numeric" maxLength={12} onChange={(event) => setQq(event.target.value.replace(/\D/g, ""))} placeholder="输入你的 QQ 号" />
-                  </label>
-                </div>
-                <label className="privacyToggle">
-                  <input type="checkbox" checked={showQq} onChange={(event) => setShowQq(event.target.checked)} />
-                  <span><b>愿意在匹配结果中展示我的 QQ</b><small>开启后，匹配到你的社员可以直接复制 QQ 添加你；关闭后，QQ 不会返回给其他成员。</small></span>
-                </label>
-                <button className="primary submit" disabled={saving || !nickname.trim() || !qq.trim()} onClick={saveIdentity}>
-                  {saving ? "保存中…" : "保存并开始匹配 →"}
-                </button>
-                {saveMessage && <div className="saveMessage">{saveMessage}</div>}
+        <section className="matchStage">
+          <div className="stageTop glassCard">
+            <div className="playerSummary">
+              <div className="playerAvatar">{savedNickname.slice(0, 1).toUpperCase()}</div>
+              <div>
+                <span>当前玩家</span>
+                <strong>{savedNickname}</strong>
+                <small>QQ {savedShowQq ? "公开给匹配成员" : "仅自己可见"}</small>
               </div>
-            ) : (
-              <>
-                <div className="profileStrip">
-                  <div><span className="muted">当前身份</span><strong>{savedNickname}</strong><small>QQ {savedShowQq ? "会展示给匹配成员" : "仅自己可见"}</small></div>
-                  <button className="textButton" onClick={() => { setIdentityDone(false); setSaveMessage(""); }}>修改昵称 / QQ</button>
-                </div>
+            </div>
 
-                {hasMatches && (
-                  <div className="progressCard">
-                    <div><span className="muted">匹配了解度</span><strong>{overallConfidence}%</strong></div>
-                    <div className="progress"><span style={{ width: `${overallConfidence}%` }} /></div>
-                    <p>不是问卷完成度，而是当前匹配结果有多少信息支撑。</p>
+            <div className="confidenceSummary">
+              <div>
+                <span>了解你</span>
+                <strong>{overallConfidence}%</strong>
+              </div>
+              <div className="confidenceTrack"><i style={{ width: `${overallConfidence}%` }} /></div>
+              <small>{hasMatches ? "继续回答，推荐会更稳定" : "回答第一题后开始计算"}</small>
+            </div>
+
+            <button className="editIdentity" onClick={() => { setIdentityDone(false); setSaveMessage(""); }}>
+              修改资料
+            </button>
+          </div>
+
+          <div className="matchWorkspace">
+            <section className="questionColumn">
+              {nextQuestion ? (
+                <QuestionCard key={nextQuestion.id} question={nextQuestion} onAnswer={answer} />
+              ) : (
+                <div className="glassCard completeCard">
+                  <span className="completeMark">✓</span>
+                  <div>
+                    <div className="stepTag">PROFILE READY</div>
+                    <h2>主要匹配信息已经足够</h2>
+                    <p>现在可以直接查看右侧推荐结果。</p>
                   </div>
-                )}
-
-                {nextQuestion ? (
-                  <QuestionCard key={nextQuestion.id} question={nextQuestion} onAnswer={answer} />
-                ) : (
-                  <div className="questionCard"><div className="discovery">✓ 已经掌握主要匹配信息</div><h2>现在可以直接看结果了。</h2></div>
-                )}
-
-                {saveMessage && <div className="saveMessage standaloneMessage">{saveMessage}</div>}
-                {dataMode === "mock" && <div className="mockNotice">当前是演示模式，资料不会上传。</div>}
-              </>
-            )}
-          </section>
-
-          <aside className="right">
-            {!identityDone ? (
-              <div className="emptyState"><div className="radar">◎</div><h3>先留下你的社团身份</h3><p>下一步开始回答游戏偏好后，这里会立即出现潜在同好。</p></div>
-            ) : !hasMatches ? (
-              <div className="emptyState"><div className="radar">◎</div><h3>你的候选人还藏在社团里</h3><p>回答第一道游戏问题后，这里会立刻出现潜在同好。</p></div>
-            ) : (
-              <>
-                <div className="resultsHeader">
-                  <div><span className="muted">当前发现</span><h2>{matches.length} 位潜在同好</h2></div>
-                  <span className="live">● 实时重排</span>
                 </div>
-                {top.length ? (
-                  <div className="matchList">
-                    {top.map((match, index) => {
-                      const oldScore = previousScores[match.member.id];
-                      const delta = oldScore === undefined ? 0 : Math.round((match.score - oldScore) * 100);
-                      return (
-                        <article className={`matchCard ${index === 0 ? "topMatch" : ""}`} key={match.member.id}>
-                          <div className="rank">#{index + 1}</div>
-                          <div className="matchTop">
-                            <div className="avatar">{match.member.name.slice(0, 1)}</div>
-                            <div className="identity"><h3>{match.member.name}</h3><p>{match.member.intro}</p></div>
-                            <div className="score"><strong>{Math.round(match.score * 100)}%</strong><span>{match.confidence < 0.3 ? "很有潜力" : match.score >= 0.9 ? "非常合拍" : match.score >= 0.8 ? "很值得认识" : "可能玩得来"}</span></div>
+              )}
+
+              {saveMessage && <div className="syncMessage">{saveMessage}</div>}
+              {dataMode === "mock" && <div className="mockMessage">演示模式：当前资料不会上传。</div>}
+            </section>
+
+            <aside className="resultColumn">
+              <div className="resultHeading">
+                <div>
+                  <span>MATCHES</span>
+                  <h2>{hasMatches ? `${matches.length} 位潜在同好` : "等待第一条偏好"}</h2>
+                </div>
+                {hasMatches && <div className="liveDot"><i />实时重排</div>}
+              </div>
+
+              {!hasMatches ? (
+                <div className="glassCard waitingCard">
+                  <div className="radarGraphic"><span>◎</span></div>
+                  <h3>你的候选人还藏在社团里</h3>
+                  <p>回答第一道游戏问题后，这里会立即出现潜在同好。</p>
+                </div>
+              ) : top.length ? (
+                <div className="matchList">
+                  {top.map((match, index) => {
+                    const oldScore = previousScores[match.member.id];
+                    const delta = oldScore === undefined ? 0 : Math.round((match.score - oldScore) * 100);
+                    const label = match.confidence < 0.3
+                      ? "很有潜力"
+                      : match.score >= 0.9
+                        ? "非常合拍"
+                        : match.score >= 0.8
+                          ? "很值得认识"
+                          : "可能玩得来";
+
+                    return (
+                      <article className={`matchCard ${index === 0 ? "topMatch" : ""}`} key={match.member.id}>
+                        <div className="rankBadge">#{index + 1}</div>
+                        {index === 0 && <div className="recommendTag">TOP MATCH</div>}
+
+                        <div className="matchHeader">
+                          <div className="memberAvatar">{match.member.name.slice(0, 1).toUpperCase()}</div>
+                          <div className="memberIdentity">
+                            <h3>{match.member.name}</h3>
+                            <p>{match.member.intro}</p>
                           </div>
-                          {delta !== 0 && <div className={delta > 0 ? "delta up" : "delta down"}>{delta > 0 ? "↑" : "↓"} 刚刚 {Math.abs(delta)}%</div>}
-                          <div className="reasonRow">{(match.reasons.length ? match.reasons : ["当前已有核心兴趣重合"]).map((reason) => <span key={reason}>{reason}</span>)}</div>
-                          <div className="confidence"><span>了解度</span><div><i style={{ width: `${Math.round(match.confidence * 100)}%` }} /></div><b>{Math.round(match.confidence * 100)}%</b></div>
-                          {dataMode === "remote" && (
-                            match.member.qq ? (
-                              <div className="qqArea">
-                                <div><span>TA 愿意公开 QQ</span><strong>{match.member.qq}</strong></div>
-                                <button onClick={() => copyQq(match.member)}>{copiedQqId === match.member.id ? "已复制 ✓" : "复制 QQ"}</button>
+                          <div className="matchScore">
+                            <strong>{Math.round(match.score * 100)}%</strong>
+                            <span>{label}</span>
+                          </div>
+                        </div>
+
+                        {delta !== 0 && (
+                          <div className={`scoreDelta ${delta > 0 ? "up" : "down"}`}>
+                            {delta > 0 ? "↑" : "↓"} 刚刚 {Math.abs(delta)}%
+                          </div>
+                        )}
+
+                        <div className="reasonTags">
+                          {(match.reasons.length ? match.reasons : ["已有核心兴趣重合"]).map((reason) => (
+                            <span key={reason}>{reason}</span>
+                          ))}
+                        </div>
+
+                        <div className="memberConfidence">
+                          <span>了解度</span>
+                          <div><i style={{ width: `${Math.round(match.confidence * 100)}%` }} /></div>
+                          <b>{Math.round(match.confidence * 100)}%</b>
+                        </div>
+
+                        {dataMode === "remote" && (
+                          match.member.qq ? (
+                            <div className="qqContact">
+                              <div>
+                                <span>TA 愿意公开 QQ</span>
+                                <strong>{match.member.qq}</strong>
                               </div>
-                            ) : (
-                              <div className="qqMuted">TA 暂未选择展示 QQ</div>
-                            )
-                          )}
-                        </article>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="emptyState compactEmpty"><div className="radar">◎</div><h3>{dataMode === "remote" ? "还没有匹配到其他社员" : "演示成员里暂时没有重合"}</h3><p>{dataMode === "remote" ? "等其他社员填写后，结果会自然出现。" : "换一个兴趣组合再试试。"}</p></div>
-                )}
-              </>
-            )}
-          </aside>
-        </div>
+                              <button onClick={() => copyQq(match.member)}>
+                                {copiedQqId === match.member.id ? "已复制 ✓" : "复制 QQ"}
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="qqPrivate">TA 暂未选择展示 QQ</div>
+                          )
+                        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="glassCard waitingCard compact">
+                  <div className="radarGraphic"><span>◎</span></div>
+                  <h3>{dataMode === "remote" ? "还没有找到重合成员" : "演示成员里暂时没有重合"}</h3>
+                  <p>{dataMode === "remote" ? "等更多社员填写后，结果会自然出现。" : "换一个兴趣组合再试试。"}</p>
+                </div>
+              )}
+            </aside>
+          </div>
+        </section>
       )}
     </main>
   );
@@ -307,18 +421,35 @@ function QuestionCard({ question, onAnswer }: { question: Question; onAnswer: (f
   }
 
   return (
-    <div className="questionCard">
-      <div className="questionLabel">现在最值得确认的一点</div>
+    <div className="glassCard questionPanel">
+      <div className="questionTopline">
+        <div className="stepTag">NEXT QUESTION</div>
+        {question.multi && <span>最多选择 {question.maxSelections ?? "多"} 项</span>}
+      </div>
       <h2>{question.prompt}</h2>
       <p className="questionContext">{question.context}</p>
-      <div className="options">
-        {question.options.map((option) => (
-          <button key={option.value} className={`option ${selected.includes(option.value) ? "selected" : ""}`} onClick={() => choose(option.value)}>
-            <span>{option.label}</span>{option.hint && <small>{option.hint}</small>}
+      <div className="optionGrid">
+        {question.options.map((option, index) => (
+          <button
+            key={option.value}
+            className={`answerOption ${selected.includes(option.value) ? "selected" : ""}`}
+            onClick={() => choose(option.value)}
+          >
+            <span className="optionIndex">{String(index + 1).padStart(2, "0")}</span>
+            <span className="optionText">
+              <b>{option.label}</b>
+              {option.hint && <small>{option.hint}</small>}
+            </span>
+            <span className="optionArrow">{selected.includes(option.value) ? "✓" : "→"}</span>
           </button>
         ))}
       </div>
-      {question.multi && <button className="primary submit" disabled={!selected.length} onClick={() => onAnswer(question.field, selected)}>看看匹配发生什么变化 →</button>}
+      {question.multi && (
+        <button className="mainButton answerSubmit" disabled={!selected.length} onClick={() => onAnswer(question.field, selected)}>
+          看看匹配发生什么变化
+          <span>→</span>
+        </button>
+      )}
     </div>
   );
 }
