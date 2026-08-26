@@ -1,24 +1,24 @@
 .sceneBackdrop{
-  background-image:url("https://www.minecraft.net/content/dam/minecraftnet/games/minecraft/screenshots/MCV_ChaseTheSkies_Swamp02_VV_.net_1280x720.jpg")!important;
+  background-image:url('/hero-campus.webp')!important;
   background-size:cover;
-  background-position:center 48%;
-  filter:saturate(1.05) contrast(1.04) brightness(.9);
-  transform:scale(1.02);
+  background-position:center 46%;
+  filter:saturate(.98) contrast(1.03) brightness(.84);
+  transform:scale(1.018);
 }
 .sceneBackdrop:after{
   content:"";
   position:absolute;
   inset:0;
   background:
-    radial-gradient(circle at 50% 42%,rgba(5,18,15,.04) 0 18%,rgba(5,18,15,.22) 58%,rgba(4,14,12,.42) 100%),
-    linear-gradient(180deg,rgba(8,18,16,.08),rgba(8,20,17,.2));
+    radial-gradient(circle at 50% 43%,rgba(5,18,15,.16) 0 19%,rgba(5,18,15,.26) 47%,rgba(4,14,12,.38) 100%),
+    linear-gradient(180deg,rgba(7,17,16,.08),rgba(7,19,17,.28));
 }
 .sceneShade{
-  background:linear-gradient(180deg,rgba(8,18,17,.16) 0%,rgba(8,21,18,.16) 52%,rgba(5,17,14,.42) 100%)!important;
+  background:linear-gradient(180deg,rgba(7,16,16,.12) 0%,rgba(6,18,16,.18) 50%,rgba(5,16,14,.38) 100%)!important;
 }
 .isStarted .sceneBackdrop{
-  filter:saturate(.92) contrast(1.02) brightness(.78);
+  filter:saturate(.9) contrast(1.02) brightness(.72);
 }
 @media(max-width:700px){
-  .sceneBackdrop{background-position:58% center;}
+  .sceneBackdrop{background-position:50% center;}
 }
