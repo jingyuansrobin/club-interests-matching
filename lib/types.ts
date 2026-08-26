@@ -25,6 +25,7 @@ export type Member = PartialProfile & {
   id: string;
   name: string;
   intro: string;
+  qq?: string;
 };
 
 export type QuestionOption = {
