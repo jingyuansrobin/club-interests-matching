@@ -93,17 +93,18 @@ export default function AdminPage() {
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
+    const maybeClient = getSupabaseClient();
+    if (!maybeClient) {
       setMessage("Supabase 未配置，管理员面板无法加载。");
       setLoading(false);
       return;
     }
+    const client = maybeClient;
 
-    async function load() {
+    const load = async () => {
       setLoading(true);
       setMessage("");
-      const { data: userData } = await supabase.auth.getUser();
+      const { data: userData } = await client.auth.getUser();
       const user = userData.user;
       setCurrentEmail(user?.email ?? "");
 
@@ -113,7 +114,7 @@ export default function AdminPage() {
         return;
       }
 
-      const { data: dashboard, error } = await supabase.rpc("get_admin_dashboard");
+      const { data: dashboard, error } = await client.rpc("get_admin_dashboard");
       if (error) {
         setData(null);
         setMessage("当前账号没有管理员权限，或管理数据暂时无法读取。");
@@ -121,7 +122,7 @@ export default function AdminPage() {
         setData(dashboard as AdminDashboardData);
       }
       setLoading(false);
-    }
+    };
 
     load().catch((error) => {
       console.error(error);
@@ -129,7 +130,7 @@ export default function AdminPage() {
       setLoading(false);
     });
 
-    const { data: listener } = supabase.auth.onAuthStateChange(() => {
+    const { data: listener } = client.auth.onAuthStateChange(() => {
       window.setTimeout(() => load().catch(console.error), 0);
     });
     return () => listener.subscription.unsubscribe();
@@ -142,13 +143,13 @@ export default function AdminPage() {
       return;
     }
 
-    const supabase = getSupabaseClient();
-    if (!supabase) return;
+    const client = getSupabaseClient();
+    if (!client) return;
 
     try {
       setSending(true);
       setMessage("");
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await client.auth.signInWithOtp({
         email: cleanEmail,
         options: {
           shouldCreateUser: false,
@@ -166,9 +167,9 @@ export default function AdminPage() {
   }
 
   async function signOut() {
-    const supabase = getSupabaseClient();
-    if (!supabase) return;
-    await supabase.auth.signOut();
+    const client = getSupabaseClient();
+    if (!client) return;
+    await client.auth.signOut();
     setData(null);
     setCurrentEmail("");
     setMessage("");
