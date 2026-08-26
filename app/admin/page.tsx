@@ -151,15 +151,15 @@ export default function AdminPage() {
       const { error } = await supabase.auth.signInWithOtp({
         email: cleanEmail,
         options: {
-          shouldCreateUser: true,
+          shouldCreateUser: false,
           emailRedirectTo: `${window.location.origin}/admin/`,
         },
       });
       if (error) throw error;
-      setMessage("管理员登录邮件已发送。打开邮件中的链接后会返回这个页面。只有白名单邮箱能够读取管理数据。");
+      setMessage("管理员登录邮件已发送。打开邮件中的链接后会返回这个页面。首次使用前，请先在主站用“保护 / 恢复资料”把管理员邮箱绑定到现有身份。只有数据库白名单邮箱能够读取管理数据。");
     } catch (error) {
       console.error(error);
-      setMessage(error instanceof Error ? error.message : "登录邮件发送失败。");
+      setMessage(error instanceof Error ? error.message : "登录邮件发送失败。首次使用请先回主站绑定管理员邮箱。");
     } finally {
       setSending(false);
     }
@@ -202,7 +202,7 @@ export default function AdminPage() {
         <section className="adminLoginCard">
           <div className="adminKicker">ECNUMC MATCH · ADMIN</div>
           <h1>管理员面板</h1>
-          <p>通过管理员邮箱的 Magic Link 登录。权限由 Supabase 数据库白名单校验，不依赖前端隐藏。</p>
+          <p>通过管理员邮箱的 Magic Link 登录。首次使用请先在主站把管理员邮箱绑定到当前资料，避免生成与玩家画像分离的账号。</p>
           {currentEmail ? (
             <div className="adminWrongAccount">
               当前登录邮箱：<strong>{currentEmail}</strong>
