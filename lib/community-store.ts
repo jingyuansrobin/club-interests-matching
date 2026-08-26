@@ -140,31 +140,39 @@ export async function saveCommunityProfile(
     throw new Error("请输入 5–12 位数字 QQ 号");
   }
 
-  const profilePayload: Record<string, unknown> = {
-    user_id: user.id,
-    display_name: cleanName,
-    interests: profile.interests ?? null,
-    pace: profile.pace ?? null,
-    availability: profile.availability ?? null,
-    duration: profile.duration ?? null,
-    group_size: profile.groupSize ?? null,
-    collaboration: profile.collaboration ?? null,
-    roles: profile.roles ?? null,
-    communication: profile.communication ?? null,
-    research: profile.research ?? null,
-    session_style: profile.sessionStyle ?? null,
-    resource_style: profile.resourceStyle ?? null,
-    experience_style: profile.experienceStyle ?? null,
-    discoverable: Boolean(profile.interests?.length),
-    updated_at: new Date().toISOString(),
-  };
-
+  let resolvedIntro: string | null;
   if (intro !== undefined) {
-    profilePayload.intro = intro.trim().slice(0, 120) || null;
+    resolvedIntro = intro.trim().slice(0, 120) || null;
+  } else {
+    const { data: existing, error: introError } = await supabase
+      .from("member_profiles")
+      .select("intro")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (introError) throw introError;
+    resolvedIntro = (existing as { intro: string | null } | null)?.intro ?? null;
   }
 
   const { error: profileError } = await supabase.from("member_profiles").upsert(
-    profilePayload,
+    {
+      user_id: user.id,
+      display_name: cleanName,
+      intro: resolvedIntro,
+      interests: profile.interests ?? null,
+      pace: profile.pace ?? null,
+      availability: profile.availability ?? null,
+      duration: profile.duration ?? null,
+      group_size: profile.groupSize ?? null,
+      collaboration: profile.collaboration ?? null,
+      roles: profile.roles ?? null,
+      communication: profile.communication ?? null,
+      research: profile.research ?? null,
+      session_style: profile.sessionStyle ?? null,
+      resource_style: profile.resourceStyle ?? null,
+      experience_style: profile.experienceStyle ?? null,
+      discoverable: Boolean(profile.interests?.length),
+      updated_at: new Date().toISOString(),
+    },
     { onConflict: "user_id" }
   );
 
