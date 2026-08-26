@@ -9,6 +9,12 @@ import type { Member, PartialProfile, ProfileField, Question } from "@/lib/types
 
 type DataMode = "loading" | "remote" | "mock";
 
+type QuestionHistoryEntry = {
+  questionId: string;
+  profileBefore: PartialProfile;
+  answer: string | string[];
+};
+
 export default function Home() {
   const [started, setStarted] = useState(false);
   const [identityDone, setIdentityDone] = useState(false);
@@ -26,6 +32,8 @@ export default function Home() {
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
   const [copiedQqId, setCopiedQqId] = useState<string | null>(null);
+  const [questionHistory, setQuestionHistory] = useState<QuestionHistoryEntry[]>([]);
+  const [revisitEntry, setRevisitEntry] = useState<QuestionHistoryEntry | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +87,10 @@ export default function Home() {
     () => chooseNextQuestion(profile, matches.slice(0, 8).map((match) => match.member), questions),
     [profile, matches]
   );
+  const activeQuestion = useMemo(
+    () => revisitEntry ? questions.find((question) => question.id === revisitEntry.questionId) ?? nextQuestion : nextQuestion,
+    [revisitEntry, nextQuestion]
+  );
 
   useEffect(() => {
     if (
@@ -106,8 +118,45 @@ export default function Home() {
   }, [dataMode, identityDone, profile, savedNickname, savedQq, savedShowQq]);
 
   function answer(field: ProfileField, value: string | string[]) {
+    if (!activeQuestion) return;
+
     setPreviousScores(Object.fromEntries(matches.map((match) => [match.member.id, match.score])));
-    setProfile((current) => ({ ...current, [field]: value }));
+
+    if (revisitEntry) {
+      setQuestionHistory((current) => [
+        ...current,
+        {
+          questionId: revisitEntry.questionId,
+          profileBefore: revisitEntry.profileBefore,
+          answer: value,
+        },
+      ]);
+      setProfile({ ...revisitEntry.profileBefore, [field]: value });
+      setRevisitEntry(null);
+      return;
+    }
+
+    const profileBefore = { ...profile };
+    setQuestionHistory((current) => [
+      ...current,
+      {
+        questionId: activeQuestion.id,
+        profileBefore,
+        answer: value,
+      },
+    ]);
+    setProfile({ ...profileBefore, [field]: value });
+  }
+
+  function goToPreviousQuestion() {
+    if (!questionHistory.length) return;
+
+    const previous = questionHistory[questionHistory.length - 1];
+    setPreviousScores(Object.fromEntries(matches.map((match) => [match.member.id, match.score])));
+    setQuestionHistory((current) => current.slice(0, -1));
+    setProfile(previous.profileBefore);
+    setRevisitEntry(previous);
+    setSaveMessage("");
   }
 
   async function saveIdentity() {
@@ -291,8 +340,15 @@ export default function Home() {
 
           <div className="matchWorkspace">
             <section className="questionColumn">
-              {nextQuestion ? (
-                <QuestionCard key={nextQuestion.id} question={nextQuestion} onAnswer={answer} />
+              {activeQuestion ? (
+                <QuestionCard
+                  key={`${activeQuestion.id}-${revisitEntry ? "revisit" : "next"}`}
+                  question={activeQuestion}
+                  initialValue={revisitEntry?.answer}
+                  canGoBack={questionHistory.length > 0}
+                  onBack={goToPreviousQuestion}
+                  onAnswer={answer}
+                />
               ) : (
                 <div className="glassCard completeCard">
                   <span className="completeMark">✓</span>
@@ -300,6 +356,12 @@ export default function Home() {
                     <div className="stepTag">PROFILE READY</div>
                     <h2>主要匹配信息已经足够</h2>
                     <p>现在可以直接查看右侧推荐结果。</p>
+                    {questionHistory.length > 0 && (
+                      <button className="questionBackButton completeBack" onClick={goToPreviousQuestion}>
+                        <span>←</span>
+                        返回上一题
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -405,11 +467,29 @@ export default function Home() {
   );
 }
 
-function QuestionCard({ question, onAnswer }: { question: Question; onAnswer: (field: ProfileField, value: string | string[]) => void }) {
-  const [selected, setSelected] = useState<string[]>([]);
+function QuestionCard({
+  question,
+  initialValue,
+  canGoBack,
+  onBack,
+  onAnswer,
+}: {
+  question: Question;
+  initialValue?: string | string[];
+  canGoBack: boolean;
+  onBack: () => void;
+  onAnswer: (field: ProfileField, value: string | string[]) => void;
+}) {
+  const initialSelected = Array.isArray(initialValue)
+    ? initialValue
+    : initialValue
+      ? [initialValue]
+      : [];
+  const [selected, setSelected] = useState<string[]>(initialSelected);
 
   function choose(value: string) {
     if (!question.multi) {
+      setSelected([value]);
       onAnswer(question.field, value);
       return;
     }
@@ -422,9 +502,20 @@ function QuestionCard({ question, onAnswer }: { question: Question; onAnswer: (f
 
   return (
     <div className="glassCard questionPanel">
-      <div className="questionTopline">
-        <div className="stepTag">NEXT QUESTION</div>
-        {question.multi && <span>最多选择 {question.maxSelections ?? "多"} 项</span>}
+      <div className="questionNavRow">
+        <button
+          className="questionBackButton"
+          onClick={onBack}
+          disabled={!canGoBack}
+          aria-label="返回上一题"
+        >
+          <span>←</span>
+          上一题
+        </button>
+        <div className="questionTopline">
+          <div className="stepTag">{initialValue !== undefined ? "PREVIOUS QUESTION" : "NEXT QUESTION"}</div>
+          {question.multi && <span>最多选择 {question.maxSelections ?? "多"} 项</span>}
+        </div>
       </div>
       <h2>{question.prompt}</h2>
       <p className="questionContext">{question.context}</p>
