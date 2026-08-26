@@ -54,11 +54,13 @@ export default function IdentityIntroControl() {
     const saveButton = panel?.querySelector<HTMLButtonElement>(".mainButton");
     if (!panel || !saveButton) return;
 
+    const currentPanel = panel;
+
     function saveIntroWithIdentity() {
-      const identityInputs = panel.querySelectorAll<HTMLInputElement>(".identityGrid input");
+      const identityInputs = currentPanel.querySelectorAll<HTMLInputElement>(".identityGrid input");
       const name = identityInputs[0]?.value.trim() ?? "";
       const qq = identityInputs[1]?.value.trim() ?? "";
-      const showQq = panel.querySelector<HTMLInputElement>(".privacyChoice input[type='checkbox']")?.checked ?? false;
+      const showQq = currentPanel.querySelector<HTMLInputElement>(".privacyChoice input[type='checkbox']")?.checked ?? false;
 
       if (!name || !/^\d{5,12}$/.test(qq)) return;
 
