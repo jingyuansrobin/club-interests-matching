@@ -1,12 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  expressInterest,
-  loadCommunityData,
-  saveCommunityProfile,
-  withdrawInterest,
-} from "@/lib/community-store";
+import { loadCommunityData, saveCommunityProfile } from "@/lib/community-store";
 import { mockMembers } from "@/lib/mock-members";
 import { chooseNextQuestion, rankMatches } from "@/lib/matching";
 import { questions } from "@/lib/questions";
@@ -16,6 +11,7 @@ type DataMode = "loading" | "remote" | "mock";
 
 export default function Home() {
   const [started, setStarted] = useState(false);
+  const [identityDone, setIdentityDone] = useState(false);
   const [profile, setProfile] = useState<PartialProfile>({});
   const [previousScores, setPreviousScores] = useState<Record<string, number>>({});
   const [members, setMembers] = useState<Member[]>(mockMembers);
@@ -23,11 +19,13 @@ export default function Home() {
   const [dataMessage, setDataMessage] = useState("");
   const [nickname, setNickname] = useState("");
   const [savedNickname, setSavedNickname] = useState("");
+  const [qq, setQq] = useState("");
+  const [savedQq, setSavedQq] = useState("");
+  const [showQq, setShowQq] = useState(false);
+  const [savedShowQq, setSavedShowQq] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
-  const [outgoingInterest, setOutgoingInterest] = useState<string[]>([]);
-  const [incomingInterest, setIncomingInterest] = useState<string[]>([]);
-  const [connectingId, setConnectingId] = useState<string | null>(null);
+  const [copiedQqId, setCopiedQqId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -42,15 +40,22 @@ export default function Home() {
         }
 
         setMembers(data.members);
-        setOutgoingInterest(data.outgoingInterest);
-        setIncomingInterest(data.incomingInterest);
         setDataMode("remote");
         setDataMessage("已连接真实成员池");
 
         if (data.ownName) {
           setNickname(data.ownName);
           setSavedNickname(data.ownName);
+          setStarted(true);
         }
+        if (data.ownQq) {
+          setQq(data.ownQq);
+          setSavedQq(data.ownQq);
+        }
+        setShowQq(data.ownShowQq ?? false);
+        setSavedShowQq(data.ownShowQq ?? false);
+
+        if (data.ownName && data.ownQq) setIdentityDone(true);
         if (data.ownProfile && Object.keys(data.ownProfile).length) {
           setProfile(data.ownProfile);
           setStarted(true);
@@ -76,12 +81,18 @@ export default function Home() {
   );
 
   useEffect(() => {
-    if (dataMode !== "remote" || !savedNickname || !profile.interests?.length) return;
+    if (
+      dataMode !== "remote" ||
+      !identityDone ||
+      !savedNickname ||
+      !savedQq ||
+      !profile.interests?.length
+    ) return;
 
     const timer = window.setTimeout(async () => {
       try {
         setSaving(true);
-        await saveCommunityProfile(savedNickname, profile);
+        await saveCommunityProfile(savedNickname, profile, savedQq, savedShowQq);
         setSaveMessage("画像已自动同步");
       } catch (error) {
         console.error(error);
@@ -92,29 +103,41 @@ export default function Home() {
     }, 600);
 
     return () => window.clearTimeout(timer);
-  }, [dataMode, profile, savedNickname]);
+  }, [dataMode, identityDone, profile, savedNickname, savedQq, savedShowQq]);
 
   function answer(field: ProfileField, value: string | string[]) {
     setPreviousScores(Object.fromEntries(matches.map((match) => [match.member.id, match.score])));
     setProfile((current) => ({ ...current, [field]: value }));
   }
 
-  async function joinPool() {
-    if (dataMode !== "remote") return;
+  async function saveIdentity() {
+    const cleanName = nickname.trim();
+    const cleanQq = qq.trim();
+
+    if (!cleanName) {
+      setSaveMessage("请先填写社团昵称");
+      return;
+    }
+    if (!/^\d{5,12}$/.test(cleanQq)) {
+      setSaveMessage("请输入 5–12 位数字 QQ 号");
+      return;
+    }
+
     try {
       setSaving(true);
       setSaveMessage("");
-      const cleanName = nickname.trim();
-      await saveCommunityProfile(cleanName, profile);
-      setSavedNickname(cleanName);
-      setSaveMessage("已加入真实成员匹配池，后续答案会自动保存");
 
-      const fresh = await loadCommunityData();
-      if (fresh.enabled) {
-        setMembers(fresh.members);
-        setOutgoingInterest(fresh.outgoingInterest);
-        setIncomingInterest(fresh.incomingInterest);
+      if (dataMode === "remote") {
+        await saveCommunityProfile(cleanName, profile, cleanQq, showQq);
+        const fresh = await loadCommunityData();
+        if (fresh.enabled) setMembers(fresh.members);
       }
+
+      setSavedNickname(cleanName);
+      setSavedQq(cleanQq);
+      setSavedShowQq(showQq);
+      setIdentityDone(true);
+      setSaveMessage(showQq ? "资料已保存，匹配到你的成员可以看到 QQ" : "资料已保存，QQ 仅你自己可见");
     } catch (error) {
       console.error(error);
       setSaveMessage(error instanceof Error ? error.message : "保存失败，请稍后重试");
@@ -123,26 +146,14 @@ export default function Home() {
     }
   }
 
-  async function toggleConnection(memberId: string) {
-    if (dataMode !== "remote" || !savedNickname || connectingId) return;
-
-    const alreadyInterested = outgoingInterest.includes(memberId);
+  async function copyQq(member: Member) {
+    if (!member.qq) return;
     try {
-      setConnectingId(memberId);
-      if (alreadyInterested) {
-        await withdrawInterest(memberId);
-        setOutgoingInterest((current) => current.filter((id) => id !== memberId));
-      } else {
-        await expressInterest(memberId);
-        setOutgoingInterest((current) =>
-          current.includes(memberId) ? current : [...current, memberId]
-        );
-      }
-    } catch (error) {
-      console.error(error);
-      setSaveMessage(error instanceof Error ? error.message : "连线操作失败，请稍后重试");
-    } finally {
-      setConnectingId(null);
+      await navigator.clipboard.writeText(member.qq);
+      setCopiedQqId(member.id);
+      window.setTimeout(() => setCopiedQqId(null), 1600);
+    } catch {
+      setCopiedQqId(null);
     }
   }
 
@@ -168,66 +179,70 @@ export default function Home() {
         <section className="hero">
           <div className="eyebrow">不是问卷，是一次逐渐变准的同好发现</div>
           <h1>社团里可能已经有一个<br /><span>很适合和你一起玩的人。</span></h1>
-          <p>先回答一个问题。每一次回答都会重新计算候选人，你随时可以停下来查看当前结果。</p>
-          <button className="primary heroButton" onClick={() => setStarted(true)}>回答第一个问题 →</button>
-          <div className="heroMeta"><span>无需一次答完</span><span>规则可解释</span><span>答完立即反馈</span></div>
+          <p>先留下社团昵称和联系方式，再回答一个游戏偏好问题。每一次回答都会重新计算候选人。</p>
+          <button className="primary heroButton" onClick={() => setStarted(true)}>开始找搭子 →</button>
+          <div className="heroMeta"><span>无需注册账号</span><span>QQ 是否展示由你决定</span><span>答完立即反馈</span></div>
           {dataMessage && <p className="dataMessage">{dataMessage}</p>}
         </section>
       ) : (
         <div className="workspace">
           <section className="left">
-            {hasMatches && (
-              <div className="progressCard">
-                <div>
-                  <span className="muted">匹配了解度</span>
-                  <strong>{overallConfidence}%</strong>
+            {!identityDone ? (
+              <div className="questionCard identityCard">
+                <div className="questionLabel">第一步 · 先认识一下你</div>
+                <h2>在社团里，大家怎么称呼你？</h2>
+                <p className="questionContext">昵称会显示在匹配结果里；QQ 是否展示完全由你决定。</p>
+                <div className="identityFields">
+                  <label>
+                    <span>社团昵称 / MC ID</span>
+                    <input value={nickname} maxLength={32} onChange={(event) => setNickname(event.target.value)} placeholder="例如 Jingyuans_robin" />
+                  </label>
+                  <label>
+                    <span>QQ</span>
+                    <input value={qq} inputMode="numeric" maxLength={12} onChange={(event) => setQq(event.target.value.replace(/\D/g, ""))} placeholder="输入你的 QQ 号" />
+                  </label>
                 </div>
-                <div className="progress"><span style={{ width: `${overallConfidence}%` }} /></div>
-                <p>不是完成度。它表示我们掌握了多少足以比较你和候选人的信息。</p>
-              </div>
-            )}
-
-            {nextQuestion ? (
-              <QuestionCard key={nextQuestion.id} question={nextQuestion} onAnswer={answer} />
-            ) : (
-              <div className="questionCard"><div className="discovery">✓ 已经掌握主要匹配信息</div><h2>现在可以直接看结果了。</h2></div>
-            )}
-
-            {hasMatches && dataMode === "remote" && (
-              <div className="joinCard">
-                <div>
-                  <span className="questionLabel">保存你的玩家画像</span>
-                  <h3>{savedNickname ? `已以「${savedNickname}」加入匹配池` : "让其他社员也能发现你"}</h3>
-                  <p>只需要一个社团昵称，不要求邮箱或密码。当前版本不会收集联系方式。</p>
-                </div>
-                <div className="joinControls">
-                  <input
-                    value={nickname}
-                    maxLength={32}
-                    onChange={(event) => setNickname(event.target.value)}
-                    placeholder="你的社团昵称 / MC ID"
-                    aria-label="社团昵称"
-                  />
-                  <button className="primary" disabled={saving || !nickname.trim()} onClick={joinPool}>
-                    {saving ? "保存中…" : savedNickname ? "更新昵称" : "加入匹配池"}
-                  </button>
-                </div>
+                <label className="privacyToggle">
+                  <input type="checkbox" checked={showQq} onChange={(event) => setShowQq(event.target.checked)} />
+                  <span><b>愿意在匹配结果中展示我的 QQ</b><small>开启后，匹配到你的社员可以直接复制 QQ 添加你；关闭后，QQ 不会返回给其他成员。</small></span>
+                </label>
+                <button className="primary submit" disabled={saving || !nickname.trim() || !qq.trim()} onClick={saveIdentity}>
+                  {saving ? "保存中…" : "保存并开始匹配 →"}
+                </button>
                 {saveMessage && <div className="saveMessage">{saveMessage}</div>}
               </div>
-            )}
+            ) : (
+              <>
+                <div className="profileStrip">
+                  <div><span className="muted">当前身份</span><strong>{savedNickname}</strong><small>QQ {savedShowQq ? "会展示给匹配成员" : "仅自己可见"}</small></div>
+                  <button className="textButton" onClick={() => { setIdentityDone(false); setSaveMessage(""); }}>修改昵称 / QQ</button>
+                </div>
 
-            {hasMatches && dataMode === "mock" && (
-              <div className="joinCard mutedCard">
-                <span className="questionLabel">当前是演示模式</span>
-                <h3>匹配逻辑可正常体验，但画像不会上传。</h3>
-                <p>配置 Supabase 后，这里会自动切换为真实成员池。</p>
-              </div>
+                {hasMatches && (
+                  <div className="progressCard">
+                    <div><span className="muted">匹配了解度</span><strong>{overallConfidence}%</strong></div>
+                    <div className="progress"><span style={{ width: `${overallConfidence}%` }} /></div>
+                    <p>不是问卷完成度，而是当前匹配结果有多少信息支撑。</p>
+                  </div>
+                )}
+
+                {nextQuestion ? (
+                  <QuestionCard key={nextQuestion.id} question={nextQuestion} onAnswer={answer} />
+                ) : (
+                  <div className="questionCard"><div className="discovery">✓ 已经掌握主要匹配信息</div><h2>现在可以直接看结果了。</h2></div>
+                )}
+
+                {saveMessage && <div className="saveMessage standaloneMessage">{saveMessage}</div>}
+                {dataMode === "mock" && <div className="mockNotice">当前是演示模式，资料不会上传。</div>}
+              </>
             )}
           </section>
 
           <aside className="right">
-            {!hasMatches ? (
-              <div className="emptyState"><div className="radar">◎</div><h3>你的候选人还藏在社团里</h3><p>回答第一题后，这里会立刻出现潜在同好。</p></div>
+            {!identityDone ? (
+              <div className="emptyState"><div className="radar">◎</div><h3>先留下你的社团身份</h3><p>下一步开始回答游戏偏好后，这里会立即出现潜在同好。</p></div>
+            ) : !hasMatches ? (
+              <div className="emptyState"><div className="radar">◎</div><h3>你的候选人还藏在社团里</h3><p>回答第一道游戏问题后，这里会立刻出现潜在同好。</p></div>
             ) : (
               <>
                 <div className="resultsHeader">
@@ -239,8 +254,6 @@ export default function Home() {
                     {top.map((match, index) => {
                       const oldScore = previousScores[match.member.id];
                       const delta = oldScore === undefined ? 0 : Math.round((match.score - oldScore) * 100);
-                      const interested = outgoingInterest.includes(match.member.id);
-                      const mutual = interested && incomingInterest.includes(match.member.id);
                       return (
                         <article className={`matchCard ${index === 0 ? "topMatch" : ""}`} key={match.member.id}>
                           <div className="rank">#{index + 1}</div>
@@ -250,41 +263,24 @@ export default function Home() {
                             <div className="score"><strong>{Math.round(match.score * 100)}%</strong><span>{match.confidence < 0.3 ? "很有潜力" : match.score >= 0.9 ? "非常合拍" : match.score >= 0.8 ? "很值得认识" : "可能玩得来"}</span></div>
                           </div>
                           {delta !== 0 && <div className={delta > 0 ? "delta up" : "delta down"}>{delta > 0 ? "↑" : "↓"} 刚刚 {Math.abs(delta)}%</div>}
-                          <div className="reasonRow">
-                            {(match.reasons.length ? match.reasons : ["当前已有核心兴趣重合"]).map((reason) => <span key={reason}>{reason}</span>)}
-                          </div>
+                          <div className="reasonRow">{(match.reasons.length ? match.reasons : ["当前已有核心兴趣重合"]).map((reason) => <span key={reason}>{reason}</span>)}</div>
                           <div className="confidence"><span>了解度</span><div><i style={{ width: `${Math.round(match.confidence * 100)}%` }} /></div><b>{Math.round(match.confidence * 100)}%</b></div>
                           {dataMode === "remote" && (
-                            <div className="connectionArea">
-                              {mutual && <div className="mutualNotice">🎉 你们都想一起玩，已经成功连线</div>}
-                              <button
-                                className={`connectButton ${mutual ? "mutual" : interested ? "sent" : ""}`}
-                                disabled={!savedNickname || connectingId === match.member.id}
-                                onClick={() => toggleConnection(match.member.id)}
-                              >
-                                {!savedNickname
-                                  ? "先加入匹配池再发起连线"
-                                  : connectingId === match.member.id
-                                    ? "处理中…"
-                                    : mutual
-                                      ? "✓ 已成功连线"
-                                      : interested
-                                        ? "✓ 已表达兴趣 · 点击撤回"
-                                        : "我想和 TA 一起玩 →"}
-                              </button>
-                              {interested && !mutual && <p className="connectionHint">只有对方也选择你时，双方才会看到“成功连线”。</p>}
-                            </div>
+                            match.member.qq ? (
+                              <div className="qqArea">
+                                <div><span>TA 愿意公开 QQ</span><strong>{match.member.qq}</strong></div>
+                                <button onClick={() => copyQq(match.member)}>{copiedQqId === match.member.id ? "已复制 ✓" : "复制 QQ"}</button>
+                              </div>
+                            ) : (
+                              <div className="qqMuted">TA 暂未选择展示 QQ</div>
+                            )
                           )}
                         </article>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="emptyState compactEmpty">
-                    <div className="radar">◎</div>
-                    <h3>{dataMode === "remote" ? "还没有匹配到其他社员" : "演示成员里暂时没有重合"}</h3>
-                    <p>{dataMode === "remote" ? "你可以先加入匹配池。等其他社员填写后，结果会自然出现。" : "换一个兴趣组合再试试。"}</p>
-                  </div>
+                  <div className="emptyState compactEmpty"><div className="radar">◎</div><h3>{dataMode === "remote" ? "还没有匹配到其他社员" : "演示成员里暂时没有重合"}</h3><p>{dataMode === "remote" ? "等其他社员填写后，结果会自然出现。" : "换一个兴趣组合再试试。"}</p></div>
                 )}
               </>
             )}
@@ -322,11 +318,7 @@ function QuestionCard({ question, onAnswer }: { question: Question; onAnswer: (f
           </button>
         ))}
       </div>
-      {question.multi && (
-        <button className="primary submit" disabled={!selected.length} onClick={() => onAnswer(question.field, selected)}>
-          看看匹配发生什么变化 →
-        </button>
-      )}
+      {question.multi && <button className="primary submit" disabled={!selected.length} onClick={() => onAnswer(question.field, selected)}>看看匹配发生什么变化 →</button>}
     </div>
   );
 }
