@@ -31,6 +31,7 @@ export type CommunityData = {
   members: Member[];
   ownProfile?: PartialProfile;
   ownName?: string;
+  ownIntro?: string;
   ownQq?: string;
   ownShowQq?: boolean;
   userId?: string;
@@ -69,7 +70,7 @@ function rowToMember(row: ProfileRow, qq?: string): Member {
   return {
     id: row.user_id,
     name: row.display_name,
-    intro: row.intro || "Minecraft 社团成员",
+    intro: row.intro?.trim() || "Minecraft 社团成员",
     qq,
     ...rowToProfile(row),
   };
@@ -108,6 +109,7 @@ export async function loadCommunityData(): Promise<CommunityData> {
     enabled: true,
     userId: user.id,
     ownName: own?.display_name,
+    ownIntro: own?.intro ?? "",
     ownQq: ownContact?.qq,
     ownShowQq: ownContact?.show_qq ?? false,
     ownProfile: own ? rowToProfile(own) : undefined,
@@ -138,11 +140,13 @@ export async function saveCommunityProfile(
     throw new Error("请输入 5–12 位数字 QQ 号");
   }
 
+  const cleanIntro = intro.trim().slice(0, 120) || "Minecraft 社团成员";
+
   const { error: profileError } = await supabase.from("member_profiles").upsert(
     {
       user_id: user.id,
       display_name: cleanName,
-      intro,
+      intro: cleanIntro,
       interests: profile.interests ?? null,
       pace: profile.pace ?? null,
       availability: profile.availability ?? null,
