@@ -124,7 +124,7 @@ export async function saveCommunityProfile(
   profile: PartialProfile,
   qq: string,
   showQq: boolean,
-  intro = "Minecraft 社团成员"
+  intro?: string
 ) {
   const supabase = getSupabaseClient();
   if (!supabase) throw new Error("Supabase 尚未配置");
@@ -140,28 +140,31 @@ export async function saveCommunityProfile(
     throw new Error("请输入 5–12 位数字 QQ 号");
   }
 
-  const cleanIntro = intro.trim().slice(0, 120) || "Minecraft 社团成员";
+  const profilePayload: Record<string, unknown> = {
+    user_id: user.id,
+    display_name: cleanName,
+    interests: profile.interests ?? null,
+    pace: profile.pace ?? null,
+    availability: profile.availability ?? null,
+    duration: profile.duration ?? null,
+    group_size: profile.groupSize ?? null,
+    collaboration: profile.collaboration ?? null,
+    roles: profile.roles ?? null,
+    communication: profile.communication ?? null,
+    research: profile.research ?? null,
+    session_style: profile.sessionStyle ?? null,
+    resource_style: profile.resourceStyle ?? null,
+    experience_style: profile.experienceStyle ?? null,
+    discoverable: Boolean(profile.interests?.length),
+    updated_at: new Date().toISOString(),
+  };
+
+  if (intro !== undefined) {
+    profilePayload.intro = intro.trim().slice(0, 120) || null;
+  }
 
   const { error: profileError } = await supabase.from("member_profiles").upsert(
-    {
-      user_id: user.id,
-      display_name: cleanName,
-      intro: cleanIntro,
-      interests: profile.interests ?? null,
-      pace: profile.pace ?? null,
-      availability: profile.availability ?? null,
-      duration: profile.duration ?? null,
-      group_size: profile.groupSize ?? null,
-      collaboration: profile.collaboration ?? null,
-      roles: profile.roles ?? null,
-      communication: profile.communication ?? null,
-      research: profile.research ?? null,
-      session_style: profile.sessionStyle ?? null,
-      resource_style: profile.resourceStyle ?? null,
-      experience_style: profile.experienceStyle ?? null,
-      discoverable: Boolean(profile.interests?.length),
-      updated_at: new Date().toISOString(),
-    },
+    profilePayload,
     { onConflict: "user_id" }
   );
 
