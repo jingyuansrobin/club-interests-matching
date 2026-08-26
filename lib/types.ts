@@ -7,7 +7,10 @@ export type ProfileField =
   | "collaboration"
   | "roles"
   | "communication"
-  | "research";
+  | "research"
+  | "sessionStyle"
+  | "resourceStyle"
+  | "experienceStyle";
 
 export type PartialProfile = {
   interests?: string[];
@@ -19,6 +22,9 @@ export type PartialProfile = {
   roles?: string[];
   communication?: string;
   research?: string;
+  sessionStyle?: string;
+  resourceStyle?: string;
+  experienceStyle?: string;
 };
 
 export type Member = PartialProfile & {
