@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { loadCommunityData, saveCommunityProfile } from "@/lib/community-store";
+import {
+  expressInterest,
+  loadCommunityData,
+  saveCommunityProfile,
+  withdrawInterest,
+} from "@/lib/community-store";
 import { mockMembers } from "@/lib/mock-members";
 import { chooseNextQuestion, rankMatches } from "@/lib/matching";
 import { questions } from "@/lib/questions";
@@ -20,6 +25,9 @@ export default function Home() {
   const [savedNickname, setSavedNickname] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState("");
+  const [outgoingInterest, setOutgoingInterest] = useState<string[]>([]);
+  const [incomingInterest, setIncomingInterest] = useState<string[]>([]);
+  const [connectingId, setConnectingId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +42,8 @@ export default function Home() {
         }
 
         setMembers(data.members);
+        setOutgoingInterest(data.outgoingInterest);
+        setIncomingInterest(data.incomingInterest);
         setDataMode("remote");
         setDataMessage("已连接真实成员池");
 
@@ -100,12 +110,39 @@ export default function Home() {
       setSaveMessage("已加入真实成员匹配池，后续答案会自动保存");
 
       const fresh = await loadCommunityData();
-      if (fresh.enabled) setMembers(fresh.members);
+      if (fresh.enabled) {
+        setMembers(fresh.members);
+        setOutgoingInterest(fresh.outgoingInterest);
+        setIncomingInterest(fresh.incomingInterest);
+      }
     } catch (error) {
       console.error(error);
       setSaveMessage(error instanceof Error ? error.message : "保存失败，请稍后重试");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function toggleConnection(memberId: string) {
+    if (dataMode !== "remote" || !savedNickname || connectingId) return;
+
+    const alreadyInterested = outgoingInterest.includes(memberId);
+    try {
+      setConnectingId(memberId);
+      if (alreadyInterested) {
+        await withdrawInterest(memberId);
+        setOutgoingInterest((current) => current.filter((id) => id !== memberId));
+      } else {
+        await expressInterest(memberId);
+        setOutgoingInterest((current) =>
+          current.includes(memberId) ? current : [...current, memberId]
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      setSaveMessage(error instanceof Error ? error.message : "连线操作失败，请稍后重试");
+    } finally {
+      setConnectingId(null);
     }
   }
 
@@ -202,6 +239,8 @@ export default function Home() {
                     {top.map((match, index) => {
                       const oldScore = previousScores[match.member.id];
                       const delta = oldScore === undefined ? 0 : Math.round((match.score - oldScore) * 100);
+                      const interested = outgoingInterest.includes(match.member.id);
+                      const mutual = interested && incomingInterest.includes(match.member.id);
                       return (
                         <article className={`matchCard ${index === 0 ? "topMatch" : ""}`} key={match.member.id}>
                           <div className="rank">#{index + 1}</div>
@@ -215,6 +254,27 @@ export default function Home() {
                             {(match.reasons.length ? match.reasons : ["当前已有核心兴趣重合"]).map((reason) => <span key={reason}>{reason}</span>)}
                           </div>
                           <div className="confidence"><span>了解度</span><div><i style={{ width: `${Math.round(match.confidence * 100)}%` }} /></div><b>{Math.round(match.confidence * 100)}%</b></div>
+                          {dataMode === "remote" && (
+                            <div className="connectionArea">
+                              {mutual && <div className="mutualNotice">🎉 你们都想一起玩，已经成功连线</div>}
+                              <button
+                                className={`connectButton ${mutual ? "mutual" : interested ? "sent" : ""}`}
+                                disabled={!savedNickname || connectingId === match.member.id}
+                                onClick={() => toggleConnection(match.member.id)}
+                              >
+                                {!savedNickname
+                                  ? "先加入匹配池再发起连线"
+                                  : connectingId === match.member.id
+                                    ? "处理中…"
+                                    : mutual
+                                      ? "✓ 已成功连线"
+                                      : interested
+                                        ? "✓ 已表达兴趣 · 点击撤回"
+                                        : "我想和 TA 一起玩 →"}
+                              </button>
+                              {interested && !mutual && <p className="connectionHint">只有对方也选择你时，双方才会看到“成功连线”。</p>}
+                            </div>
+                          )}
                         </article>
                       );
                     })}
