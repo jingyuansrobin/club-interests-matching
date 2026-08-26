@@ -14,10 +14,19 @@ create table if not exists public.member_profiles (
   roles text[],
   communication text,
   research text,
+  session_style text,
+  resource_style text,
+  experience_style text,
   discoverable boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Keep existing projects in sync when this file is re-run after new profile dimensions are added.
+alter table public.member_profiles
+  add column if not exists session_style text,
+  add column if not exists resource_style text,
+  add column if not exists experience_style text;
 
 alter table public.member_profiles enable row level security;
 
