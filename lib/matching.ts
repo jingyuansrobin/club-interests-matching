@@ -71,20 +71,22 @@ function list(value: unknown): string[] | undefined {
   return Array.isArray(value) ? value : undefined;
 }
 
-function interestScore(a: string[], b: string[]) {
-  const importance = [1, 0.8, 0.6];
-  const aw = new Map(a.map((value, index) => [value, importance[index] ?? 0.5]));
-  const bw = new Map(b.map((value, index) => [value, importance[index] ?? 0.5]));
-  const union = new Set([...a, ...b]);
-  let numerator = 0;
-  let denominator = 0;
-  for (const value of union) {
-    const left = aw.get(value) ?? 0;
-    const right = bw.get(value) ?? 0;
-    numerator += Math.min(left, right);
-    denominator += Math.max(left, right);
-  }
-  return denominator ? numerator / denominator : 0;
+function interestScore(user: string[], candidate: string[]) {
+  const userImportance = [1, 0.8, 0.6];
+  const candidateImportance = [1, 0.9, 0.8];
+  let earned = 0;
+  let possible = 0;
+
+  user.forEach((interest, index) => {
+    const weight = userImportance[index] ?? 0.5;
+    possible += weight;
+    const candidateIndex = candidate.indexOf(interest);
+    if (candidateIndex >= 0) {
+      earned += weight * (candidateImportance[candidateIndex] ?? 0.7);
+    }
+  });
+
+  return possible ? earned / possible : 0;
 }
 
 function availabilityScore(a: string[], b: string[]) {
