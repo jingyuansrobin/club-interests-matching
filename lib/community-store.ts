@@ -14,6 +14,9 @@ type ProfileRow = {
   roles: string[] | null;
   communication: string | null;
   research: string | null;
+  session_style: string | null;
+  resource_style: string | null;
+  experience_style: string | null;
   discoverable: boolean;
 };
 
@@ -56,6 +59,9 @@ function rowToProfile(row: ProfileRow): PartialProfile {
     roles: row.roles ?? undefined,
     communication: row.communication ?? undefined,
     research: row.research ?? undefined,
+    sessionStyle: row.session_style ?? undefined,
+    resourceStyle: row.resource_style ?? undefined,
+    experienceStyle: row.experience_style ?? undefined,
   };
 }
 
@@ -82,7 +88,7 @@ export async function loadCommunityData(): Promise<CommunityData> {
     supabase
       .from("member_profiles")
       .select(
-        "user_id, display_name, intro, interests, pace, availability, duration, group_size, collaboration, roles, communication, research, discoverable"
+        "user_id, display_name, intro, interests, pace, availability, duration, group_size, collaboration, roles, communication, research, session_style, resource_style, experience_style, discoverable"
       ),
     supabase.from("member_contacts").select("user_id, qq, show_qq"),
   ]);
@@ -146,6 +152,9 @@ export async function saveCommunityProfile(
       roles: profile.roles ?? null,
       communication: profile.communication ?? null,
       research: profile.research ?? null,
+      session_style: profile.sessionStyle ?? null,
+      resource_style: profile.resourceStyle ?? null,
+      experience_style: profile.experienceStyle ?? null,
       discoverable: Boolean(profile.interests?.length),
       updated_at: new Date().toISOString(),
     },
