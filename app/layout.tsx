@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./background.css";
+import "./mobile-ux.css";
 
 export const metadata: Metadata = {
   title: "方块搭子 · 社团兴趣匹配",
