@@ -202,20 +202,22 @@ begin
           'boundEmail', coalesce(u.is_anonymous, true) = false,
           'createdAt', p.created_at,
           'updatedAt', p.updated_at,
-          'completion', round((num_nonnull(
-            p.interests,
-            p.pace,
-            p.availability,
-            p.duration,
-            p.group_size,
-            p.collaboration,
-            p.roles,
-            p.communication,
-            p.research,
-            p.session_style,
-            p.resource_style,
-            p.experience_style
-          )::numeric / 12) * 100)
+          'completion', round((
+            (
+              case when p.interests is not null then 1 else 0 end +
+              case when p.pace is not null then 1 else 0 end +
+              case when p.availability is not null then 1 else 0 end +
+              case when p.duration is not null then 1 else 0 end +
+              case when p.group_size is not null then 1 else 0 end +
+              case when p.collaboration is not null then 1 else 0 end +
+              case when p.roles is not null then 1 else 0 end +
+              case when p.communication is not null then 1 else 0 end +
+              case when p.research is not null then 1 else 0 end +
+              case when p.session_style is not null then 1 else 0 end +
+              case when p.resource_style is not null then 1 else 0 end +
+              case when p.experience_style is not null then 1 else 0 end
+            )::numeric / 12
+          ) * 100)
         )
         order by p.updated_at desc
       )
