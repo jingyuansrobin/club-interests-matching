@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { loadCommunityData, saveCommunityProfile } from "@/lib/community-store";
 
@@ -9,13 +9,16 @@ const MAX_INTRO_LENGTH = 120;
 export default function IdentityIntroControl() {
   const [target, setTarget] = useState<HTMLElement | null>(null);
   const [intro, setIntro] = useState("");
+  const introDirtyRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
 
     loadCommunityData()
       .then((data) => {
-        if (!cancelled && data.enabled) setIntro(data.ownIntro ?? "");
+        if (!cancelled && data.enabled && !introDirtyRef.current) {
+          setIntro(data.ownIntro ?? "");
+        }
       })
       .catch((error) => console.error("Failed to load member intro", error));
 
@@ -92,7 +95,10 @@ export default function IdentityIntroControl() {
         value={intro}
         maxLength={MAX_INTRO_LENGTH}
         rows={3}
-        onChange={(event) => setIntro(event.target.value)}
+        onChange={(event) => {
+          introDirtyRef.current = true;
+          setIntro(event.target.value);
+        }}
         placeholder="介绍一下你最近在玩的整合包、喜欢的玩法、最近想找什么样的搭子……"
       />
       <small className="introHint">这段介绍会展示在其他成员看到的匹配卡片中，建议用 1–3 句话简单介绍自己。</small>
