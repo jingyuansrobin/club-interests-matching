@@ -83,11 +83,30 @@ function formatDate(value: string) {
   }
 }
 
+function authErrorMessage(error: unknown, fallback: string) {
+  const raw = error instanceof Error ? error.message : "";
+  const lower = raw.toLowerCase();
+  if (lower.includes("email rate limit exceeded") || lower.includes("rate limit")) {
+    return "邮件发送过于频繁，请稍后再试。验证码发送后 60 秒内无需重复请求。";
+  }
+  if (lower.includes("token has expired") || lower.includes("otp expired")) {
+    return "验证码已过期，请重新获取。";
+  }
+  if (lower.includes("invalid") && (lower.includes("token") || lower.includes("otp"))) {
+    return "验证码不正确，请检查后重试。";
+  }
+  return raw || fallback;
+}
+
 export default function AdminPage() {
   const [email, setEmail] = useState("ruihaotan@outlook.com");
+  const [otp, setOtp] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
   const [currentEmail, setCurrentEmail] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [message, setMessage] = useState("");
   const [query, setQuery] = useState("");
@@ -136,7 +155,15 @@ export default function AdminPage() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  async function sendLoginLink() {
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = window.setInterval(() => {
+      setCooldown((value) => Math.max(0, value - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [cooldown]);
+
+  async function sendLoginCode() {
     const cleanEmail = email.trim().toLowerCase();
     if (!/^\S+@\S+\.\S+$/.test(cleanEmail)) {
       setMessage("请输入有效邮箱。");
@@ -151,18 +178,48 @@ export default function AdminPage() {
       setMessage("");
       const { error } = await client.auth.signInWithOtp({
         email: cleanEmail,
-        options: {
-          shouldCreateUser: false,
-          emailRedirectTo: `${window.location.origin}/admin/`,
-        },
+        options: { shouldCreateUser: false },
       });
       if (error) throw error;
-      setMessage("管理员登录邮件已发送。打开邮件中的链接后会返回这个页面。首次使用前，请先在主站用“保护 / 恢复资料”把管理员邮箱绑定到现有身份。只有数据库白名单邮箱能够读取管理数据。");
+      setOtpSent(true);
+      setOtp("");
+      setCooldown(60);
+      setMessage("6 位管理员验证码已发送到邮箱。请直接在此页面输入验证码，无需点击邮件链接。");
     } catch (error) {
       console.error(error);
-      setMessage(error instanceof Error ? error.message : "登录邮件发送失败。首次使用请先回主站绑定管理员邮箱。");
+      setMessage(authErrorMessage(error, "管理员验证码发送失败。"));
     } finally {
       setSending(false);
+    }
+  }
+
+  async function verifyLoginCode() {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanOtp = otp.replace(/\D/g, "");
+    if (!/^\d{6}$/.test(cleanOtp)) {
+      setMessage("请输入邮件中的 6 位数字验证码。");
+      return;
+    }
+
+    const client = getSupabaseClient();
+    if (!client) return;
+
+    try {
+      setVerifying(true);
+      setMessage("");
+      const { error } = await client.auth.verifyOtp({
+        email: cleanEmail,
+        token: cleanOtp,
+        type: "email",
+      });
+      if (error) throw error;
+      setMessage("验证成功，正在进入管理员面板…");
+      window.setTimeout(() => window.location.reload(), 250);
+    } catch (error) {
+      console.error(error);
+      setMessage(authErrorMessage(error, "验证码验证失败，请检查后重试。"));
+    } finally {
+      setVerifying(false);
     }
   }
 
@@ -172,6 +229,8 @@ export default function AdminPage() {
     await client.auth.signOut();
     setData(null);
     setCurrentEmail("");
+    setOtpSent(false);
+    setOtp("");
     setMessage("");
   }
 
@@ -203,7 +262,7 @@ export default function AdminPage() {
         <section className="adminLoginCard">
           <div className="adminKicker">ECNUMC MATCH · ADMIN</div>
           <h1>管理员面板</h1>
-          <p>通过管理员邮箱的 Magic Link 登录。首次使用请先在主站把管理员邮箱绑定到当前资料，避免生成与玩家画像分离的账号。</p>
+          <p>使用管理员邮箱的 6 位验证码登录。无需点击邮件链接，验证码只用于验证管理员身份。</p>
           {currentEmail ? (
             <div className="adminWrongAccount">
               当前登录邮箱：<strong>{currentEmail}</strong>
@@ -213,11 +272,50 @@ export default function AdminPage() {
             <>
               <label className="adminEmailField">
                 <span>管理员邮箱</span>
-                <input value={email} onChange={(event) => setEmail(event.target.value)} type="email" />
+                <input
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    if (otpSent) {
+                      setOtpSent(false);
+                      setOtp("");
+                      setMessage("");
+                    }
+                  }}
+                  type="email"
+                  disabled={sending || verifying}
+                />
               </label>
-              <button className="adminLoginButton" onClick={sendLoginLink} disabled={sending}>
-                {sending ? "正在发送…" : "发送管理员登录邮件"}
-              </button>
+
+              {otpSent && (
+                <label className="adminEmailField">
+                  <span>6 位验证码</span>
+                  <input
+                    value={otp}
+                    onChange={(event) => setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    maxLength={6}
+                    placeholder="000000"
+                  />
+                </label>
+              )}
+
+              {otpSent ? (
+                <>
+                  <button className="adminLoginButton" onClick={verifyLoginCode} disabled={verifying || otp.length !== 6}>
+                    {verifying ? "正在验证…" : "验证并进入管理员面板"}
+                  </button>
+                  <button className="adminLoginButton" onClick={sendLoginCode} disabled={sending || cooldown > 0}>
+                    {cooldown > 0 ? `${cooldown} 秒后可重新发送` : sending ? "正在发送…" : "重新发送验证码"}
+                  </button>
+                </>
+              ) : (
+                <button className="adminLoginButton" onClick={sendLoginCode} disabled={sending}>
+                  {sending ? "正在发送…" : "发送 6 位管理员验证码"}
+                </button>
+              )}
             </>
           )}
           {message && <div className="adminMessage">{message}</div>}
