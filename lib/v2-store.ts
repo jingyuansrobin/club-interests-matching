@@ -7,8 +7,6 @@ type V1OwnProfile = {
   display_name: string;
   intro: string | null;
   interests: string[] | null;
-  pace: string | null;
-  collaboration: string | null;
 };
 
 type V2Row = {
@@ -65,28 +63,17 @@ function fromRow(row: V2Row): V2MatchProfile {
 
 function buildLegacySuggestion(v1: V1OwnProfile): V2MatchProfile {
   const profile: V2MatchProfile = JSON.parse(JSON.stringify(EMPTY_V2_PROFILE));
+
+  // V1 only tells us which interests made the user's limited Top-N selection.
+  // It does NOT tell us that unselected interests are disliked, and its old
+  // pace/collaboration categories are too coarse to safely infer V2 axes.
+  // Therefore migration suggestions intentionally prefill selected interests only.
   for (const interest of v1.interests ?? []) {
     if (["tech", "vanilla", "building", "redstone", "pvp", "minigame", "magic", "adventure", "challenge", "development"].includes(interest)) {
       profile.interestScores[interest as keyof typeof profile.interestScores] = 3;
     }
   }
 
-  const paceMap: Record<string, { ideal: number; tolerance: number }> = {
-    hardcore: { ideal: 4, tolerance: 0 },
-    steady: { ideal: 3, tolerance: 1 },
-    burst: { ideal: 3, tolerance: 1 },
-    casual: { ideal: 0, tolerance: 1 },
-    adaptive: { ideal: 2, tolerance: 2 },
-  };
-  if (v1.pace && paceMap[v1.pace]) profile.playstylePreferences.paceIntensity = paceMap[v1.pace];
-
-  if (v1.collaboration === "together") profile.playstylePreferences.collabSynchrony = { ideal: 0, tolerance: 0 };
-  if (v1.collaboration === "independent") profile.playstylePreferences.collabSynchrony = { ideal: 4, tolerance: 1 };
-  if (v1.collaboration === "divide") profile.playstylePreferences.collabDivision = { ideal: 4, tolerance: 0 };
-  if (v1.collaboration === "flexible") {
-    profile.playstylePreferences.collabSynchrony = { ideal: 2, tolerance: 2 };
-    profile.playstylePreferences.collabDivision = { ideal: 2, tolerance: 2 };
-  }
   return profile;
 }
 
@@ -101,7 +88,7 @@ export async function loadV2OwnData(): Promise<V2LoadResult> {
   const [profileResult, contactResult, v2Result] = await Promise.all([
     supabase
       .from("member_profiles")
-      .select("user_id, display_name, intro, interests, pace, collaboration")
+      .select("user_id, display_name, intro, interests")
       .eq("user_id", user.id)
       .maybeSingle(),
     supabase.from("member_contacts").select("user_id, qq, show_qq").eq("user_id", user.id).maybeSingle(),
