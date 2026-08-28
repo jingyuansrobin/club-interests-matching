@@ -5,6 +5,7 @@ import "./background.css";
 import "./mobile-ux.css";
 import "./account-control.css";
 import "./v2.css";
+import "./v2-interest-ux.css";
 
 export const metadata: Metadata = {
   title: "方块搭子 · 水杉方块社玩家匹配",
