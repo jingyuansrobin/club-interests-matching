@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
-import RestartMatchControl from "./restart-match-control";
-import IdentityIntroControl from "./identity-intro-control";
 import AccountControl from "./account-control";
 import "./globals.css";
 import "./background.css";
 import "./mobile-ux.css";
-import "./restart-match.css";
-import "./identity-intro.css";
 import "./account-control.css";
+import "./v2.css";
 
 export const metadata: Metadata = {
-  title: "方块搭子 · 社团兴趣匹配",
-  description: "回答一个问题，找到更适合一起玩 Minecraft 的社员。",
+  title: "方块搭子 · 水杉方块社玩家匹配",
+  description: "用玩法兴趣、上线时间和多人游戏习惯，找到真正能一起玩的 Minecraft 搭子。",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -19,8 +16,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="zh-CN">
       <body>
         {children}
-        <IdentityIntroControl />
-        <RestartMatchControl />
         <AccountControl />
       </body>
     </html>
