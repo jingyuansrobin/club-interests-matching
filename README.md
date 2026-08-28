@@ -1,24 +1,62 @@
-# Club Interests Matching
+# 方块搭子 · Club Interests Matching
 
-一个面向高校 Minecraft 社群的渐进式兴趣匹配 MVP：用户每回答一道题，系统都会即时更新最可能一起玩的社员，而不是要求一次完成长问卷。
+面向高校 Minecraft 社群的渐进式玩家匹配工具。用户不需要一次做完长问卷：先用少量高价值信息得到第一轮推荐，再根据需要逐步完善画像。
 
-## 已实现
+当前主版本为 **V2**。完整产品与算法设计见 [`docs/v2-design.md`](docs/v2-design.md)。
 
-- 回答第一道题后立即出现潜在同好
-- 每回答一道题实时重算匹配度与了解度
-- 根据当前候选人的分歧自动选择下一道最有价值的问题
-- 展示共同点、排名与匹配变化，强化即时反馈
-- Supabase 真实成员池（可选）
-- Supabase Anonymous Auth：无需邮箱/密码即可获得独立身份
-- RLS：成员只能修改自己的画像
-- 未配置 Supabase 时自动回退到本地 mock 数据
+## V2 已实现
+
+- 社团昵称、QQ、自我介绍与 QQ 展示意愿
+- 可选邮箱绑定 / 6 位 OTP 恢复资料
+- 玩法兴趣从 Top-N 多选升级为 0–4 语义强度评分
+- 最多 2 项“最近正想玩”短期意图
+- 7 天 × 下午 / 晚上 / 深夜的上线时间热力图
+- 上线时间随机性独立建模
+- 三个核心多人游戏习惯轴：推进强度、行动同步、分工程度
+- 偏好 `ideal + tolerance`，区分“最喜欢什么”和“能适应多少”
+- Compatibility 与 Confidence 分离
+- 服务端 Top 3 匹配与可解释推荐理由
+- V1 老用户兼容：旧数据继续参与匹配，未选项不会被误判成“不喜欢”
+- 精细 V2 画像仅本人可直接读取；候选人的时间表等数据不下发到其他浏览器
+- 管理员面板、公开 QQ、匿名 Auth 等原有能力继续保留
+- Next.js 静态导出，继续支持 NAS / Nginx 部署
+
+## V2 首轮流程
+
+```text
+身份资料
+  ↓
+玩法兴趣 + 近期意图
+  ↓
+一周上线时间热力图
+  ↓
+三个核心多人游戏习惯轴
+  ↓
+正式 Top 3
+  ↓
+后续渐进式完善画像
+```
+
+角色意愿、语音/资源/存档等边界、自适应追问与匹配后反馈已经在数据模型中预留，将作为后续小版本继续接入，而不阻塞当前首轮匹配。
 
 ## 技术路线
 
-- Next.js + React + TypeScript
+- Next.js 15 + React 19 + TypeScript
 - `@supabase/supabase-js`
-- 纯 TypeScript 可解释匹配引擎
-- 无额外状态管理库、无 AI 依赖、无重量级 UI 框架
+- Supabase Postgres + Anonymous Auth + RLS
+- Supabase Edge Function `match-v2` 负责服务端匹配
+- 规则型、可解释匹配引擎；当前不依赖机器学习
+- 纯 CSS UI，无重量级 UI 框架
+
+## 匹配原则
+
+1. **不是性格测试**：目标是找到真正能一起玩的 Minecraft 搭子。
+2. **unknown ≠ 0**：未回答不会扣分；只有明确表达的 0 才代表“不喜欢 / 基本不会”。
+3. **近期需求优先**：最近正想玩的内容权重大于长期兴趣，并随时间衰减。
+4. **时间看能不能碰到**：重点计算真实共同上线窗口，而不是课表长得是否相似。
+5. **相似与互补分开**：兴趣和节奏主要看相似；角色与教学关系可以通过互补加分。
+6. **匹配度与了解程度分离**：低 Confidence 的虚高 Compatibility 会在内部排序时向中性值收缩。
+7. **先规则后学习**：先积累真实社团反馈，再决定是否校准权重或引入学习排序。
 
 ## 本地运行
 
@@ -29,23 +67,7 @@ npm run dev
 
 打开 `http://localhost:3000`。
 
-没有配置 Supabase 时，网站会自动运行在演示模式。
-
-## 启用真实成员池
-
-### 1. 创建 Supabase 项目
-
-创建一个 Supabase 项目后，在 **Authentication** 设置中启用 **Anonymous Sign-Ins**。
-
-### 2. 创建数据表和 RLS
-
-打开 Supabase SQL Editor，运行：
-
-`supabase/schema.sql`
-
-该脚本会创建 `member_profiles` 表，并限制每个登录用户只能修改自己的画像。
-
-### 3. 配置环境变量
+## 环境变量
 
 复制：
 
@@ -53,29 +75,53 @@ npm run dev
 cp .env.example .env.local
 ```
 
-然后填写：
+填写：
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
 NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLISHABLE_KEY
 ```
 
-重启 `npm run dev`。顶部状态变为 **真实成员池** 即表示连接成功。
+不要把 `service_role` key 放进浏览器环境变量。Edge Function 在 Supabase 服务端通过平台环境读取服务端凭据。
 
-## 数据与隐私边界
+## Supabase 初始化
 
-当前 `member_profiles` 只适合存放社团昵称 / MC ID 和游戏偏好。第一版不要在该表存手机号、QQ、微信、邮箱等联系方式。连接功能会在后续单独设计权限和双方确认机制。
+新项目按顺序执行：
 
-Anonymous Auth 的身份会保存在当前浏览器中；如果用户主动登出、清除浏览器数据或更换设备，第一版不会自动找回原来的匿名身份。
+1. 在 Authentication 中启用 Anonymous Sign-Ins。
+2. 在 SQL Editor 执行 `supabase/schema.sql`。
+3. 按顺序执行 `supabase/migrations/` 下的迁移。
+4. 部署 `supabase/functions/match-v2/index.ts` 为 Edge Function `match-v2`，并保持 JWT 校验开启。
+5. 配置 Auth Site URL / Redirect URLs 和邮件 OTP 模板。
 
-## 当前产品原则
+当前 V2 关键表：
 
-1. **不是做性格测试**：目标是找到最适合一起玩 Minecraft 的人。
-2. **渐进式画像**：未知信息保持 unknown，不把“未回答”误判成“不喜欢”。
-3. **匹配度与了解度分离**：高匹配但低了解度只表示“目前很有潜力”。
-4. **动态下一题**：优先询问能最大程度区分当前 Top 候选人的字段。
-5. **先规则后 AI**：先用可解释规则跑真实数据，再根据反馈调权重或引入模型。
+- `member_profiles`：昵称、自我介绍、V1 兼容字段、匹配池状态
+- `member_contacts`：QQ 与公开意愿
+- `member_match_profiles`：V2 精细玩家画像，仅本人通过 RLS 直接读取
+- `match_feedback`：预留的匹配反馈 / 行为数据
 
-## 复用说明
+## 隐私边界
 
-前期调研参考了 Roomie Finder、Duolicious、FriendMatching-HackMesa 等公开项目的产品思路。由于部分仓库许可证不明确，本仓库当前实现不直接复制其代码，只复用通用产品/算法思想。
+QQ 单独存放在 `member_contacts`；关闭展示时不会作为普通候选资料返回给其他成员。
+
+V2 的精细上线时间、容忍度和后续边界数据存放在 `member_match_profiles`。普通客户端只能直接读取自己的 V2 画像。候选人匹配由 `match-v2` Edge Function 在服务端完成，浏览器只收到展示所需的昵称、自我介绍、匹配度、了解程度、推荐理由以及允许公开的 QQ。
+
+Anonymous Auth 身份保存在浏览器中；用户可以主动绑定邮箱，以便清缓存或换设备后通过 6 位邮箱验证码恢复同一份资料。
+
+## 构建与静态部署
+
+```bash
+npm install
+npm run build
+```
+
+项目使用静态导出，产物位于 `out/`。部署到现有 Nginx / NAS 时，更新代码后需要重新构建静态产物。
+
+CI 会在 Node.js 22 环境执行安装与构建。Supabase Edge Function 源码位于 `supabase/functions/`，已从 Next.js 浏览器端 TypeScript 检查范围中隔离。
+
+## 文档
+
+- [`docs/v2-design.md`](docs/v2-design.md)：V2 产品、问卷交互、算法、数据模型、V1 迁移与视觉设计基准
+- [`supabase/migrations/`](supabase/migrations/)：V2 数据库迁移
+- [`supabase/functions/match-v2/`](supabase/functions/match-v2/)：服务端匹配引擎
