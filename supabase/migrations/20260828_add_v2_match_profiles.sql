@@ -77,5 +77,7 @@ grant select, insert on public.match_feedback to authenticated;
 
 create index if not exists match_feedback_viewer_created_idx
   on public.match_feedback (viewer_user_id, created_at desc);
+create index if not exists match_feedback_candidate_idx
+  on public.match_feedback (candidate_user_id);
 create index if not exists member_match_profiles_updated_idx
   on public.member_match_profiles (updated_at desc);
