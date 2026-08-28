@@ -15,11 +15,11 @@ export type V2InterestKey = (typeof V2_INTERESTS)[number]["key"];
 export type InterestScores = Partial<Record<V2InterestKey, number>>;
 
 export const INTEREST_SCALE = [
-  { value: 0, short: "不想玩", label: "不想玩" },
-  { value: 1, short: "能陪玩", label: "有人叫可以" },
-  { value: 2, short: "偶尔想", label: "偶尔想玩" },
-  { value: 3, short: "挺想玩", label: "挺想玩" },
-  { value: 4, short: "很想玩", label: "最近很想玩" },
+  { value: 0, short: "基本不去", label: "这类玩法基本不会让我上线" },
+  { value: 1, short: "多半不去", label: "大多数情况下不会加入，除非朋友特别喊我" },
+  { value: 2, short: "看情况", label: "要看具体整合包、队友、时间或当天状态" },
+  { value: 3, short: "大多会去", label: "大多数情况下有人喊我都会愿意加入" },
+  { value: 4, short: "很想加入", label: "看到有人开这类玩法会主动想加入" },
 ] as const;
 
 export const V2_DAYS = [
