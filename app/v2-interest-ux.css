@@ -199,24 +199,23 @@
 
 /* Lift the minimum reading size across the base questionnaire without changing its visual language. */
 .v2StepHeader p,
-.v2CompletePanel p{
-  font-size:15px;
-}
-
-.v2QuickRow>span,
-.v2QuickRow button,
-.v2HeatHeader strong,
-.v2HeatRow>strong,
-.v2HeatCell span,
-.v2Randomness strong,
-.v2Randomness button,
-.v2AxisOptions button,
-.v2Tolerance,
-.v2StepFooter strong,
-.v2Primary,
-.v2Back{
-  font-size:max(11px,inherit);
-}
+.v2CompletePanel p{font-size:15px}
+.v2QuickRow>span{font-size:11px}
+.v2QuickRow button{font-size:11px;padding:7px 10px}
+.v2HeatHeader strong{font-size:12px}
+.v2HeatHeader small{font-size:10px}
+.v2HeatRow>strong{font-size:12px}
+.v2HeatCell span{font-size:11px}
+.v2Randomness strong{font-size:12px}
+.v2Randomness small{font-size:10px}
+.v2Randomness button{font-size:11px;padding:8px 10px}
+.v2AxisPrompt>strong{font-size:14px}
+.v2AxisPrompt>div{font-size:11px}
+.v2AxisOptions button{font-size:11px;min-height:52px}
+.v2Tolerance{font-size:11px}
+.v2StepFooter strong{font-size:12px}
+.v2StepFooter small{font-size:10px}
+.v2Primary,.v2Back{font-size:12px;padding:12px 15px}
 
 @media(max-width:980px){
   .v2Workspace{
