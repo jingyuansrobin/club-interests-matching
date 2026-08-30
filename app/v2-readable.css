@@ -1,0 +1,89 @@
+/* V2 readability pass: keep the visual system, raise the minimum readable type size. */
+.v2Stage{max-width:1480px}
+.v2Workspace{grid-template-columns:minmax(0,1.18fr) minmax(420px,.82fr)}
+.v2QuestionPane{padding:34px}
+
+.v2StepHeader h2,.v2CompletePanel h2{font-size:36px}
+.v2StepHeader p,.v2CompletePanel p{font-size:16px;line-height:1.72;color:#4f665b}
+.v2Counter{font-size:13px;padding:8px 12px}
+.v2LegacyBanner,.v2InlineMessage{font-size:14px;line-height:1.65}
+
+.v2InterestTitle strong{font-size:17px}
+.v2InterestTitle small{font-size:13px;line-height:1.5;color:#61756b}
+.v2Scale button{min-height:54px;padding:8px 4px}
+.v2Scale button i{width:13px;height:13px}
+.v2Scale button span{font-size:12px}
+.v2IntentButton{font-size:12px;padding:8px 10px}
+.v2StepFooter strong{font-size:14px}
+.v2StepFooter small{font-size:12px;line-height:1.5}
+.v2Primary,.v2Back{font-size:14px;padding:13px 17px}
+
+.v2QuickRow{padding:12px 13px;gap:9px}
+.v2QuickRow>span,.v2QuickRow button{font-size:12px}
+.v2QuickRow button{padding:8px 11px}
+.v2HeatHeader strong,.v2HeatRow>strong{font-size:13px}
+.v2HeatHeader small{font-size:11px}
+.v2HeatCell{min-height:48px}
+.v2HeatCell span{font-size:12px}
+.v2Randomness strong{font-size:14px}
+.v2Randomness small{font-size:12px}
+.v2Randomness button{font-size:12px;padding:9px 11px}
+
+.v2AxisPrompt>strong{font-size:16px}
+.v2AxisPrompt>div{font-size:12px}
+.v2AxisOptions button{font-size:13px;min-height:58px;padding:10px 7px}
+.v2AxisOptions button i{width:12px;height:12px}
+.v2ProfileTags span,.v2EditActions button,.v2RestartButton{font-size:12px}
+
+.v2RefineSummary strong{font-size:18px}
+.v2RefineSummary span{font-size:14px}
+.v2EnrichmentHeader h2{font-size:36px}
+.v2EnrichmentHeader p{font-size:16px}
+.v2EnhanceProgress span{font-size:13px}
+.v2ModuleTabs b{font-size:15px}
+.v2ModuleTabs small{font-size:12px;line-height:1.45}
+.v2EnhanceTitle h3{font-size:23px}
+.v2EnhanceTitle p{font-size:14px}
+.v2EnhanceQuestion strong{font-size:16px}
+.v2EnhanceQuestion small,.v2EnhanceHint{font-size:13px;line-height:1.55}
+.v2EnhanceScale button{font-size:13px;min-height:58px}
+.v2HardToggle{font-size:13px}
+.v2RoleRow>div:first-child strong{font-size:14px}
+.v2RoleRow button{font-size:12px;padding:9px 6px}
+.v2EnrichmentFooter small{font-size:12px}
+
+.resultHeading.v2ResultHeading h2{font-size:26px}
+.resultHeading.v2ResultHeading>div>span{font-size:12px}
+.v2Waiting h3{font-size:20px}
+.v2Waiting p{font-size:14px}
+.v2MatchCard{padding:20px;border-radius:20px}
+.v2RecommendTag{font-size:10px;padding:5px 8px}
+.v2MatchIdentity h3{font-size:20px!important;line-height:1.25}
+.v2MatchIdentity p{font-size:14px!important;line-height:1.55!important;color:#5b7065!important}
+.v2MatchScore strong{font-size:25px!important}
+.v2MatchScore span{font-size:12px!important}
+.v2MatchConfidence>span{font-size:13px!important}
+.v2MatchConfidence small{font-size:12px!important;line-height:1.45}
+.v2Reasons span{font-size:14px!important;line-height:1.5}
+.v2Feedback>span{font-size:12px!important}
+.v2Feedback button{font-size:12px!important;padding:7px 9px!important}
+.v2Contact button,.v2Contact span{font-size:13px!important}
+
+.v2IntroField>span,.v2IntroField>span b{font-size:14px}
+.v2IntroField>small{font-size:12px}
+.v2IntroField textarea{font-size:15px}
+
+@media(max-width:1100px){
+  .v2Workspace{grid-template-columns:minmax(0,1fr)}
+  .v2Results{position:static}
+}
+@media(max-width:700px){
+  .v2QuestionPane{padding:22px 16px}
+  .v2StepHeader h2,.v2CompletePanel h2,.v2EnrichmentHeader h2{font-size:30px}
+  .v2StepHeader p,.v2CompletePanel p,.v2EnrichmentHeader p{font-size:15px}
+  .v2InterestTitle strong{font-size:16px}
+  .v2InterestTitle small{font-size:12px}
+  .v2Scale button span{font-size:11px}
+  .v2MatchIdentity h3{font-size:19px!important}
+  .v2MatchIdentity p{font-size:14px!important}
+}
