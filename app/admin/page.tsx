@@ -76,8 +76,8 @@ const fieldLabels: Record<string, string> = {
 const optionLabelMap = new Map<string, string>();
 for (const question of questions) for (const option of question.options) optionLabelMap.set(`${question.field}:${option.value}`, option.label.replace(/^\S+\s*/, ""));
 
-const interestMap = new Map(V2_INTERESTS.map((item) => [item.key, item]));
-const roleMap = new Map(V2_ROLE_OPTIONS.map((item) => [item.key, item]));
+const interestMap: Map<string, (typeof V2_INTERESTS)[number]> = new Map(V2_INTERESTS.map((item) => [item.key, item]));
+const roleMap: Map<string, (typeof V2_ROLE_OPTIONS)[number]> = new Map(V2_ROLE_OPTIONS.map((item) => [item.key, item]));
 const slotMap = new Map<string, string>();
 for (const day of V2_DAYS) for (const bucket of V2_TIME_BUCKETS) slotMap.set(`${day.key}_${bucket.key}`, `${day.label}${bucket.label}`);
 
