@@ -24,7 +24,7 @@ export function enrichmentModuleReady(profile: V2MatchProfile, module: V2Enrichm
   if (module === "team") return typeof profile.boundaryPreferences.groupSize?.ideal === "number" && typeof profile.boundaryPreferences.duration?.ideal === "number";
   if (module === "communication") return typeof profile.boundaryPreferences.voice?.ideal === "number" && typeof profile.boundaryPreferences.asyncProgress?.ideal === "number" && typeof profile.playstylePreferences.sessionPlanning?.ideal === "number";
   if (module === "resource") return typeof profile.playstylePreferences.resourceSharing?.ideal === "number";
-  if (module === "roles") return Object.values(profile.rolePreferences).filter((value) => typeof value === "number").length >= 3;
+  if (module === "roles") return Object.values(profile.rolePreferences).filter((value) => typeof value === "number").length >= 4;
   return typeof profile.learningPreferences.teach === "number" && typeof profile.learningPreferences.learn === "number" && typeof profile.learningPreferences.researchIndependence === "number";
 }
 
@@ -116,7 +116,7 @@ export default function V2Enrichment({
       {activeModule === "resource" && <div className="v2EnhanceQuestion"><div><strong>多人档里的资源，你更偏向怎么管理？</strong><small>个人边界强 ↔ 公共资源充分共享。</small></div><ChoiceScale labels={RESOURCE_LABELS} value={profile.playstylePreferences.resourceSharing?.ideal} onChange={(value) => setPlaystyle("resourceSharing", value)} /></div>}
 
       {activeModule === "roles" && <>
-        <div className="v2EnhanceHint">不用把 8 项全部评分。至少标 3 个你最有感觉的角色；没填的仍然是“未知”。</div>
+        <div className="v2EnhanceHint">不用把 8 项全部评分。标 4 个你最有感觉的角色就够了；没填的仍然是“未知”。</div>
         <div className="v2RoleGrid">{V2_ROLE_OPTIONS.map((role) => <div className="v2RoleRow" key={role.key}><div><span>{role.icon}</span><strong>{role.label}</strong></div><div>{["不太想负责", "可以负责", "很愿意负责"].map((label, value) => <button key={label} className={profile.rolePreferences[role.key] === value ? "active" : ""} onClick={() => setRole(role.key, value)}>{label}</button>)}</div></div>)}</div>
       </>}
 
@@ -127,6 +127,6 @@ export default function V2Enrichment({
       </>}
     </section>
 
-    <div className="v2EnrichmentFooter"><button className="v2Back" onClick={onClose}>暂时到这里</button><div><small>{ready ? "这一模块的信息已经足够 ✓" : activeModule === "roles" ? "至少标 3 个角色即可保存" : "完成当前模块后即可重新计算"}</small><button className="v2Primary" disabled={!ready || saving} onClick={onSave}>{saving ? "正在重新计算…" : "保存并更新推荐 →"}</button></div></div>
+    <div className="v2EnrichmentFooter"><button className="v2Back" onClick={onClose}>暂时到这里</button><div><small>{ready ? "这一模块的信息已经足够 ✓" : activeModule === "roles" ? "标 4 个角色即可保存" : "完成当前模块后即可重新计算"}</small><button className="v2Primary" disabled={!ready || saving} onClick={onSave}>{saving ? "正在重新计算…" : "保存并更新推荐 →"}</button></div></div>
   </div>;
 }
