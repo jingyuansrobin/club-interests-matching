@@ -1,0 +1,163 @@
+/* V2 core questionnaire completion fixes.
+   1) Availability covers morning / afternoon / evening / late night.
+   2) The center playstyle answer itself means flexible; the duplicate tolerance checkbox is hidden.
+   3) The top progress is the three-module BASE PROFILE completion, not total pairwise match confidence. */
+
+/* 7 days × 4 time buckets */
+.v2HeatHeader,
+.v2HeatRow{
+  grid-template-columns:56px repeat(4,minmax(0,1fr));
+}
+
+/* “都可以” is now the only flexible answer exposed in the core questionnaire. */
+.v2Tolerance{
+  display:none!important;
+}
+
+.v2AxisList::before{
+  content:"中间的“都可以”就代表两边都能接受，不需要再额外勾选灵活度。";
+  display:block;
+  padding:11px 13px;
+  border-radius:12px;
+  border:1px solid rgba(89,137,106,.18);
+  background:rgba(235,246,238,.74);
+  color:#3e6250;
+  font-size:13px;
+  line-height:1.55;
+  font-weight:650;
+}
+
+.v2AxisCard{
+  padding-bottom:17px;
+}
+
+/* The header meter now communicates only the required three-module base profile. */
+.v2Understanding>div:first-child>span{
+  font-size:0;
+}
+
+.v2Understanding>div:first-child>span::after{
+  content:"基础画像完成度";
+  font-size:11px;
+}
+
+.v2Understanding>div:first-child>strong{
+  font-size:0;
+}
+
+.v2Understanding>div:first-child>strong::after{
+  font-size:18px;
+  line-height:1;
+}
+
+.v2Understanding>small{
+  font-size:0;
+}
+
+.v2Understanding>small::after{
+  font-size:10px;
+  line-height:1.45;
+  color:inherit;
+}
+
+/* Module 1: interest. It counts as complete once Continue becomes enabled. */
+.v2Stage:has(.v2InterestGrid) .v2Understanding>div:first-child>strong::after{
+  content:"0%";
+}
+.v2Stage:has(.v2InterestGrid) .v2Understanding .confidenceTrack i{
+  width:0!important;
+}
+.v2Stage:has(.v2InterestGrid):has(.v2QuestionPane .v2Primary:not(:disabled)) .v2Understanding>div:first-child>strong::after{
+  content:"33%";
+}
+.v2Stage:has(.v2InterestGrid):has(.v2QuestionPane .v2Primary:not(:disabled)) .v2Understanding .confidenceTrack i{
+  width:33%!important;
+}
+.v2Stage:has(.v2InterestGrid) .v2Understanding>small::after{
+  content:"先完成兴趣模块；三个核心模块完成后会到 100%";
+}
+
+/* Module 2: availability. */
+.v2Stage:has(.v2Heatmap) .v2Understanding>div:first-child>strong::after{
+  content:"33%";
+}
+.v2Stage:has(.v2Heatmap) .v2Understanding .confidenceTrack i{
+  width:33%!important;
+}
+.v2Stage:has(.v2Heatmap):has(.v2QuestionPane .v2Primary:not(:disabled)) .v2Understanding>div:first-child>strong::after{
+  content:"67%";
+}
+.v2Stage:has(.v2Heatmap):has(.v2QuestionPane .v2Primary:not(:disabled)) .v2Understanding .confidenceTrack i{
+  width:67%!important;
+}
+.v2Stage:has(.v2Heatmap) .v2Understanding>small::after{
+  content:"再完成上线时间，就只剩最后一个核心模块";
+}
+
+/* Module 3: playstyle. */
+.v2Stage:has(.v2AxisList) .v2Understanding>div:first-child>strong::after{
+  content:"67%";
+}
+.v2Stage:has(.v2AxisList) .v2Understanding .confidenceTrack i{
+  width:67%!important;
+}
+.v2Stage:has(.v2AxisList):has(.v2QuestionPane .v2Primary:not(:disabled)) .v2Understanding>div:first-child>strong::after{
+  content:"100%";
+}
+.v2Stage:has(.v2AxisList):has(.v2QuestionPane .v2Primary:not(:disabled)) .v2Understanding .confidenceTrack i{
+  width:100%!important;
+}
+.v2Stage:has(.v2AxisList) .v2Understanding>small::after{
+  content:"回答三个游戏习惯后，基础画像即完整";
+}
+
+/* Completed state. Pairwise confidence remains on each match card separately. */
+.v2Stage:has(.v2CompletePanel) .v2Understanding>div:first-child>strong::after{
+  content:"100%";
+}
+.v2Stage:has(.v2CompletePanel) .v2Understanding .confidenceTrack i{
+  width:100%!important;
+}
+.v2Stage:has(.v2CompletePanel) .v2Understanding>small::after{
+  content:"基础画像已完成；匹配卡的“了解程度”仍反映双方共同数据覆盖";
+}
+
+@media(max-width:700px){
+  .v2HeatHeader,
+  .v2HeatRow{
+    grid-template-columns:42px repeat(4,minmax(0,1fr));
+    gap:4px;
+  }
+
+  .v2HeatHeader>div{
+    padding:0 1px;
+  }
+
+  .v2HeatHeader strong{
+    font-size:10px;
+  }
+
+  .v2HeatHeader small{
+    font-size:7px;
+    line-height:1.2;
+  }
+
+  .v2HeatRow>strong{
+    font-size:10px;
+  }
+
+  .v2HeatCell{
+    min-height:48px;
+    padding:5px 2px;
+    flex-direction:column;
+    gap:3px;
+  }
+
+  .v2HeatCell span{
+    font-size:8px;
+  }
+
+  .v2AxisList::before{
+    font-size:12px;
+  }
+}
