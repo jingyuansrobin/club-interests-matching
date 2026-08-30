@@ -33,7 +33,8 @@ export const V2_DAYS = [
 ] as const;
 
 export const V2_TIME_BUCKETS = [
-  { key: "afternoon", label: "下午", hint: "约 13:00–18:00" },
+  { key: "morning", label: "上午", hint: "约 08:00–12:00" },
+  { key: "afternoon", label: "下午", hint: "约 12:00–18:00" },
   { key: "evening", label: "晚上", hint: "约 18:00–22:00" },
   { key: "late", label: "深夜", hint: "约 22:00 以后" },
 ] as const;
