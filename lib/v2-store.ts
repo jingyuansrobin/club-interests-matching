@@ -1,5 +1,12 @@
 import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
-import type { V2Identity, V2Match, V2MatchProfile, V2PlaystyleKey, V2PlaystylePreferences } from "./v2-types";
+import type {
+  V2Identity,
+  V2Match,
+  V2MatchBundle,
+  V2MatchProfile,
+  V2PlaystyleKey,
+  V2PlaystylePreferences,
+} from "./v2-types";
 import { EMPTY_V2_PROFILE } from "./v2-types";
 
 type V1OwnProfile = {
@@ -45,8 +52,6 @@ function normalizeCorePlaystylePreferences(preferences: V2PlaystylePreferences):
     if (!value || typeof value.ideal !== "number") continue;
     normalized[key] = {
       ...value,
-      // The center answer “都可以” now carries the flexibility meaning itself.
-      // Edge answers keep a normal tolerance; there is no second checkbox in the core questionnaire.
       tolerance: value.ideal === 2 ? 2 : 1,
     };
   }
@@ -80,17 +85,11 @@ function fromRow(row: V2Row): V2MatchProfile {
 
 function buildLegacySuggestion(v1: V1OwnProfile): V2MatchProfile {
   const profile: V2MatchProfile = JSON.parse(JSON.stringify(EMPTY_V2_PROFILE));
-
-  // V1 only tells us which interests made the user's limited Top-N selection.
-  // It does NOT tell us that unselected interests are disliked, and its old
-  // pace/collaboration categories are too coarse to safely infer V2 axes.
-  // Therefore migration suggestions intentionally prefill selected interests only.
   for (const interest of v1.interests ?? []) {
     if (["tech", "vanilla", "building", "redstone", "pvp", "minigame", "magic", "adventure", "challenge", "development"].includes(interest)) {
       profile.interestScores[interest as keyof typeof profile.interestScores] = 3;
     }
   }
-
   return profile;
 }
 
@@ -103,11 +102,7 @@ export async function loadV2OwnData(): Promise<V2LoadResult> {
   if (!user) return { enabled: true, profile: JSON.parse(JSON.stringify(EMPTY_V2_PROFILE)), legacySuggested: false };
 
   const [profileResult, contactResult, v2Result] = await Promise.all([
-    supabase
-      .from("member_profiles")
-      .select("user_id, display_name, intro, interests")
-      .eq("user_id", user.id)
-      .maybeSingle(),
+    supabase.from("member_profiles").select("user_id, display_name, intro, interests").eq("user_id", user.id).maybeSingle(),
     supabase.from("member_contacts").select("user_id, qq, show_qq").eq("user_id", user.id).maybeSingle(),
     supabase.from("member_match_profiles").select("*").eq("user_id", user.id).maybeSingle(),
   ]);
@@ -124,12 +119,7 @@ export async function loadV2OwnData(): Promise<V2LoadResult> {
   return {
     enabled: true,
     identity: own && contact
-      ? {
-          name: own.display_name,
-          intro: own.intro ?? "",
-          qq: contact.qq,
-          showQq: contact.show_qq,
-        }
+      ? { name: own.display_name, intro: own.intro ?? "", qq: contact.qq, showQq: contact.show_qq }
       : undefined,
     profile: v2 ? fromRow(v2) : own ? buildLegacySuggestion(own) : JSON.parse(JSON.stringify(EMPTY_V2_PROFILE)),
     legacySuggested,
@@ -201,12 +191,34 @@ export async function resetV2MatchProfile() {
   if (profileError) throw profileError;
 }
 
-export async function fetchV2Matches(): Promise<V2Match[]> {
+export async function fetchV2MatchBundle(): Promise<V2MatchBundle> {
   const supabase = getSupabaseClient();
-  if (!supabase) return [];
+  if (!supabase) return { matches: [] };
   await ensureSession();
   const { data, error } = await supabase.functions.invoke("match-v2", { body: {} });
   if (error) throw error;
-  const payload = data as { matches?: V2Match[] } | null;
-  return payload?.matches ?? [];
+  const payload = data as V2MatchBundle | null;
+  return payload ?? { matches: [] };
+}
+
+export async function fetchV2Matches(): Promise<V2Match[]> {
+  return (await fetchV2MatchBundle()).matches;
+}
+
+export async function recordMatchFeedback(
+  candidateUserId: string,
+  options: { feedback?: "positive" | "neutral" | "negative"; reason?: string; qqCopied?: boolean }
+) {
+  const supabase = getSupabaseClient();
+  if (!supabase) return;
+  const user = await ensureSession();
+  if (!user) return;
+  const { error } = await supabase.from("match_feedback").insert({
+    viewer_user_id: user.id,
+    candidate_user_id: candidateUserId,
+    feedback: options.feedback ?? null,
+    reason: options.reason?.trim() || null,
+    qq_copied: Boolean(options.qqCopied),
+  });
+  if (error) throw error;
 }
