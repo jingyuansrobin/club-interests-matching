@@ -50,6 +50,19 @@ export type V2Preference = {
 export type V2PlaystyleKey = "paceIntensity" | "collabSynchrony" | "collabDivision" | "sessionPlanning" | "resourceSharing";
 export type V2PlaystylePreferences = Partial<Record<V2PlaystyleKey, V2Preference>>;
 
+export type V2EnrichmentModule = "team" | "communication" | "resource" | "roles" | "learning";
+
+export const V2_ROLE_OPTIONS = [
+  { key: "planner", label: "路线规划 / 查资料", icon: "🧠" },
+  { key: "technical", label: "机器 / 红石 / 技术", icon: "⚙️" },
+  { key: "builder", label: "建筑 / 基地", icon: "🏗️" },
+  { key: "gatherer", label: "资源收集", icon: "⛏️" },
+  { key: "explorer", label: "探索 / 跑图", icon: "🗺️" },
+  { key: "combat", label: "战斗 / Boss", icon: "⚔️" },
+  { key: "logistics", label: "仓储 / 后勤", icon: "📦" },
+  { key: "organizer", label: "组织公共项目", icon: "📣" },
+] as const;
+
 export type V2MatchProfile = {
   profileVersion: 2;
   interestScores: InterestScores;
@@ -72,6 +85,12 @@ export type V2Match = {
   confidence: number;
   reasons: string[];
   profileVersion: 1 | 2;
+};
+
+export type V2MatchBundle = {
+  matches: V2Match[];
+  nextModule?: V2EnrichmentModule;
+  nextModuleReason?: string;
 };
 
 export type V2Identity = {
