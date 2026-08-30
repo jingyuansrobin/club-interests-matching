@@ -8,6 +8,7 @@ import "./v2.css";
 import "./v2-interest-ux.css";
 import "./v2-core-ux.css";
 import "./v2-enrichment.css";
+import "./v2-readable.css";
 
 export const metadata: Metadata = {
   title: "方块搭子 · 水杉方块社玩家匹配",
