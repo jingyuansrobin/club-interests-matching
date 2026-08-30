@@ -1,5 +1,5 @@
 import { getSupabaseClient, isSupabaseConfigured } from "./supabase";
-import type { V2Identity, V2Match, V2MatchProfile } from "./v2-types";
+import type { V2Identity, V2Match, V2MatchProfile, V2PlaystyleKey, V2PlaystylePreferences } from "./v2-types";
 import { EMPTY_V2_PROFILE } from "./v2-types";
 
 type V1OwnProfile = {
@@ -36,6 +36,23 @@ export type V2LoadResult = {
   legacySuggested: boolean;
 };
 
+const CORE_PLAYSTYLE_KEYS: V2PlaystyleKey[] = ["paceIntensity", "collabSynchrony", "collabDivision"];
+
+function normalizeCorePlaystylePreferences(preferences: V2PlaystylePreferences): V2PlaystylePreferences {
+  const normalized: V2PlaystylePreferences = { ...preferences };
+  for (const key of CORE_PLAYSTYLE_KEYS) {
+    const value = normalized[key];
+    if (!value || typeof value.ideal !== "number") continue;
+    normalized[key] = {
+      ...value,
+      // The center answer “都可以” now carries the flexibility meaning itself.
+      // Edge answers keep a normal tolerance; there is no second checkbox in the core questionnaire.
+      tolerance: value.ideal === 2 ? 2 : 1,
+    };
+  }
+  return normalized;
+}
+
 async function ensureSession() {
   const supabase = getSupabaseClient();
   if (!supabase) return null;
@@ -54,7 +71,7 @@ function fromRow(row: V2Row): V2MatchProfile {
     intentUpdatedAt: row.intent_updated_at ?? undefined,
     availabilityGrid: row.availability_grid ?? {},
     availabilityRandomness: row.availability_randomness ?? undefined,
-    playstylePreferences: (row.playstyle_preferences ?? {}) as V2MatchProfile["playstylePreferences"],
+    playstylePreferences: normalizeCorePlaystylePreferences((row.playstyle_preferences ?? {}) as V2MatchProfile["playstylePreferences"]),
     rolePreferences: row.role_preferences ?? {},
     boundaryPreferences: (row.boundary_preferences ?? {}) as V2MatchProfile["boundaryPreferences"],
     learningPreferences: row.learning_preferences ?? {},
@@ -126,6 +143,7 @@ export async function saveV2MatchProfile(profile: V2MatchProfile) {
   if (!user) throw new Error("无法创建匿名会话");
 
   const now = new Date().toISOString();
+  const normalizedPlaystyle = normalizeCorePlaystylePreferences(profile.playstylePreferences);
   const { error } = await supabase.from("member_match_profiles").upsert(
     {
       user_id: user.id,
@@ -135,7 +153,7 @@ export async function saveV2MatchProfile(profile: V2MatchProfile) {
       intent_updated_at: profile.currentIntents.length ? (profile.intentUpdatedAt ?? now) : null,
       availability_grid: profile.availabilityGrid,
       availability_randomness: profile.availabilityRandomness ?? null,
-      playstyle_preferences: profile.playstylePreferences,
+      playstyle_preferences: normalizedPlaystyle,
       role_preferences: profile.rolePreferences,
       boundary_preferences: profile.boundaryPreferences,
       learning_preferences: profile.learningPreferences,
