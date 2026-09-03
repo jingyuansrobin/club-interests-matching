@@ -10,9 +10,15 @@ import "./v2-core-ux.css";
 import "./v2-enrichment.css";
 import "./v2-readable.css";
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://match.ecnumc.cn";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "方块搭子 · 水杉方块社玩家匹配",
   description: "用玩法兴趣、上线时间和多人游戏习惯，找到真正能一起玩的 Minecraft 搭子。",
+  alternates: {
+    canonical: "/",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
