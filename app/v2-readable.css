@@ -73,6 +73,22 @@
 .v2IntroField>small{font-size:12px}
 .v2IntroField textarea{font-size:15px}
 
+.v2SafetyModalBackdrop{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:20px;background:rgba(5,17,13,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.v2SafetyModal{width:min(520px,100%);box-sizing:border-box;border-radius:22px;padding:28px;background:rgba(252,254,252,.98);border:1px solid rgba(255,255,255,.82);box-shadow:0 28px 90px rgba(0,0,0,.3);color:#20372c}
+.v2SafetyIcon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;margin-bottom:14px;background:#fff0e7;color:#b34f22;font-size:28px;font-weight:900;border:1px solid #f2c8b4}
+.v2SafetyKicker{font-size:12px;font-weight:850;letter-spacing:.08em;color:#8a5a42;text-transform:uppercase}
+.v2SafetyModal h2{margin:6px 0 10px;font-size:30px;line-height:1.2;color:#6e2f17}
+.v2SafetyModal>p{margin:0;font-size:16px;line-height:1.72;color:#42584e}
+.v2SafetyModal>p strong{color:#20372c}
+.v2SafetyNotice{display:grid;gap:7px;margin-top:18px;padding:15px 16px;border-radius:14px;background:#fff7f1;border:1px solid #efd6c7}
+.v2SafetyNotice strong{font-size:15px;color:#7a381d}
+.v2SafetyNotice span{font-size:13px;line-height:1.65;color:#6d584e}
+.v2SafetyActions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+.v2SafetyActions button{border-radius:11px;padding:12px 15px;font-size:14px;font-weight:800;cursor:pointer}
+.v2SafetyActions .secondary{border:1px solid #d4ddd8;background:#fff;color:#53685d}
+.v2SafetyActions .primary{border:1px solid #315f4c;background:#315f4c;color:#fff}
+.v2SafetyActions .primary:hover{background:#284f3f}
+
 @media(max-width:1100px){
   .v2Workspace{grid-template-columns:minmax(0,1fr)}
   .v2Results{position:static}
@@ -86,4 +102,9 @@
   .v2Scale button span{font-size:11px}
   .v2MatchIdentity h3{font-size:19px!important}
   .v2MatchIdentity p{font-size:14px!important}
+  .v2SafetyModal{padding:22px 18px;border-radius:18px}
+  .v2SafetyModal h2{font-size:26px}
+  .v2SafetyModal>p{font-size:15px}
+  .v2SafetyActions{display:grid;grid-template-columns:1fr}
+  .v2SafetyActions button{width:100%}
 }
