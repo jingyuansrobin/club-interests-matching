@@ -73,21 +73,28 @@
 .v2IntroField>small{font-size:12px}
 .v2IntroField textarea{font-size:15px}
 
-.v2SafetyModalBackdrop{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:20px;background:rgba(5,17,13,.62);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.v2SafetyModal{width:min(520px,100%);box-sizing:border-box;border-radius:22px;padding:28px;background:rgba(252,254,252,.98);border:1px solid rgba(255,255,255,.82);box-shadow:0 28px 90px rgba(0,0,0,.3);color:#20372c}
-.v2SafetyIcon{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;margin-bottom:14px;background:#fff0e7;color:#b34f22;font-size:28px;font-weight:900;border:1px solid #f2c8b4}
-.v2SafetyKicker{font-size:12px;font-weight:850;letter-spacing:.08em;color:#8a5a42;text-transform:uppercase}
-.v2SafetyModal h2{margin:6px 0 10px;font-size:30px;line-height:1.2;color:#6e2f17}
-.v2SafetyModal>p{margin:0;font-size:16px;line-height:1.72;color:#42584e}
+.v2SafetyModalBackdrop{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:20px;background:rgba(5,17,13,.64);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.v2SafetyModal{position:relative;width:min(560px,100%);box-sizing:border-box;border-radius:24px;padding:30px;background:rgba(252,254,252,.985);border:1px solid rgba(255,255,255,.88);box-shadow:0 30px 95px rgba(0,0,0,.34);color:#20372c}
+.v2SafetyClose{position:absolute;right:15px;top:14px;width:36px;height:36px;border:0;border-radius:10px;background:#edf2ef;color:#62746b;font-size:24px;line-height:1;cursor:pointer}
+.v2SafetyClose:hover{background:#e2e9e5;color:#273e32}
+.v2SafetyIcon{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;margin-bottom:14px;background:#fff0e7;color:#b34f22;font-size:30px;font-weight:900;border:1px solid #f2c8b4}
+.v2SafetyKicker{font-size:13px;font-weight:850;letter-spacing:.08em;color:#985333;text-transform:uppercase}
+.v2SafetyModal h2{margin:6px 0 12px;font-size:31px;line-height:1.2;color:#7a3018}
+.v2SafetyModal>p{margin:0;font-size:16px;line-height:1.75;color:#42584e}
 .v2SafetyModal>p strong{color:#20372c}
 .v2SafetyNotice{display:grid;gap:7px;margin-top:18px;padding:15px 16px;border-radius:14px;background:#fff7f1;border:1px solid #efd6c7}
-.v2SafetyNotice strong{font-size:15px;color:#7a381d}
+.v2SafetyNotice strong{font-size:15px;color:#8d3b1d}
 .v2SafetyNotice span{font-size:13px;line-height:1.65;color:#6d584e}
-.v2SafetyActions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
-.v2SafetyActions button{border-radius:11px;padding:12px 15px;font-size:14px;font-weight:800;cursor:pointer}
+.v2SafetyQq{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:14px 0 0;padding:12px 14px;border-radius:12px;background:#f2f6f3;border:1px solid #dfe8e2}
+.v2SafetyQq span{font-size:13px;color:#718079}
+.v2SafetyQq strong{font-size:18px;letter-spacing:.03em;color:#294a39}
+.v2SafetyError{margin-top:10px;padding:10px 12px;border-radius:10px;background:#fff2ef;border:1px solid #ffd2c8;color:#a63f2c;font-size:13px;line-height:1.55}
+.v2SafetyActions{display:grid;grid-template-columns:1fr 1.65fr;gap:10px;margin-top:22px}
+.v2SafetyActions button{min-height:48px;border-radius:11px;padding:12px 15px;font-size:14px;font-weight:800;cursor:pointer}
 .v2SafetyActions .secondary{border:1px solid #d4ddd8;background:#fff;color:#53685d}
-.v2SafetyActions .primary{border:1px solid #315f4c;background:#315f4c;color:#fff}
-.v2SafetyActions .primary:hover{background:#284f3f}
+.v2SafetyActions .primary{border:1px solid #b34f2f;background:#b34f2f;color:#fff;box-shadow:0 10px 24px rgba(179,79,47,.2)}
+.v2SafetyActions .primary:hover{background:#9e4328}
+.v2SafetyFootnote{display:block;margin-top:13px;font-size:11px;line-height:1.55;color:#8a9790}
 
 @media(max-width:1100px){
   .v2Workspace{grid-template-columns:minmax(0,1fr)}
@@ -102,9 +109,11 @@
   .v2Scale button span{font-size:11px}
   .v2MatchIdentity h3{font-size:19px!important}
   .v2MatchIdentity p{font-size:14px!important}
-  .v2SafetyModal{padding:22px 18px;border-radius:18px}
-  .v2SafetyModal h2{font-size:26px}
+  .v2SafetyModalBackdrop{padding:12px}
+  .v2SafetyModal{padding:24px 18px 20px;border-radius:19px}
+  .v2SafetyModal h2{font-size:26px;padding-right:28px}
   .v2SafetyModal>p{font-size:15px}
-  .v2SafetyActions{display:grid;grid-template-columns:1fr}
+  .v2SafetyActions{grid-template-columns:1fr}
+  .v2SafetyActions .primary{order:-1}
   .v2SafetyActions button{width:100%}
 }
